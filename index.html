@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Strava OAuth Callback</title>
+</head>
+<body>
+  <h2>Strava Authorization Successful ✅</h2>
+  <p id="message">Fetching your code...</p>
+
+  <script>
+    // Extract query parameters from the URL
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const scope = params.get("scope");
+
+    if (code) {
+      document.getElementById("message").innerHTML =
+        `<b>Authorization code:</b> ${code} <br><b>Scope:</b> ${scope}`;
+      
+      // TODO: Send this code to Google Sheets / server / API
+      // Example: call a webhook to save the code
+      // fetch("https://script.google.com/macros/s/XXXX/exec?code=" + code);
+    } else {
+      document.getElementById("message").innerHTML =
+        "❌ No authorization code found in URL.";
+    }
+  </script>
+</body>
+</html>
