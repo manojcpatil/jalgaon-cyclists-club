@@ -6,24 +6,37 @@
 </head>
 <body>
   <h2>Strava Authorization Successful ✅</h2>
-  <p id="message">Fetching your code...</p>
+  <p id="message">Saving your code...</p>
 
   <script>
-    // Extract query parameters from the URL
+    // Extract query params
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const scope = params.get("scope");
 
     if (code) {
-      document.getElementById("message").innerHTML =
-        `<b>Authorization code:</b> ${code} <br><b>Scope:</b> ${scope}`;
-      
-      // TODO: Send this code to Google Sheets / server / API
-      // Example: call a webhook to save the code
-      // fetch("https://script.google.com/macros/s/XXXX/exec?code=" + code);
+      document.getElementById("message").innerHTML = `
+        ✅ Got code: <b>${code}</b><br>
+        Scope: ${scope}<br>
+        Sending to Google Sheets...
+      `;
+
+      // 🔄 Send code to Google Apps Script Web App
+      fetch("https://script.google.com/macros/s/AKfycbxV169JV_DMRdoSlRcPLt86HlG3CTIOvQU_me0US9Aqs95Ogy0rLKw3zGFYDZ5nFhUk/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code, scope: scope })
+      })
+      .then(() => {
+        document.getElementById("message").innerHTML += "<br>✅ Saved to Google Sheets!";
+      })
+      .catch(err => {
+        document.getElementById("message").innerHTML += "<br>❌ Error: " + err;
+      });
+
     } else {
-      document.getElementById("message").innerHTML =
-        "❌ No authorization code found in URL.";
+      document.getElementById("message").innerHTML = "❌ No code found in URL.";
     }
   </script>
 </body>
