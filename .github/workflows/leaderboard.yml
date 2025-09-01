@@ -36,6 +36,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add leaderboard.md leaderboard.csv
+          git add leaderboard.md leaderboard.csv leaderboard.html
           git commit -m "🔄 Update leaderboard [skip ci]" || echo "No changes"
           git push
