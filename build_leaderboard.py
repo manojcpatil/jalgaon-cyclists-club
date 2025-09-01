@@ -120,8 +120,16 @@ if __name__ == "__main__":
     # Save as CSV (for analysis)
     leaderboard.to_csv("leaderboard.csv")
 
-    # Save as Markdown (for GitHub Pages)
+    # Save as Markdown (for GitHub Pages content)
     with open("leaderboard.md", "w") as f:
         f.write("# 🚴 Jalgaon Cyclist Club – August Leaderboard\n\n")
         f.write(leaderboard.to_markdown())
-    print("✅ Leaderboard built and saved")
+
+    # 🔥 Save as HTML (for direct viewing on GitHub Pages)
+    with open("leaderboard.html", "w", encoding="utf-8") as f:
+        f.write("<html><head><meta charset='utf-8'><title>Leaderboard</title></head><body>")
+        f.write("<h1>🚴 Jalgaon Cyclist Club – August Leaderboard</h1>")
+        f.write(leaderboard.to_html(escape=False))  # HTML table
+        f.write("</body></html>")
+
+    print("✅ Leaderboard built and saved (CSV, MD, HTML)")
