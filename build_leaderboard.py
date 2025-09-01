@@ -1,39 +1,40 @@
 import os
 import json
 import requests
-import datetime
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+from datetime import datetime, timedelta
+from oauth2client.service_account import ServiceAccountCredentials
 
-# =========================
-# CONFIG
-# =========================
-STRAVA_CLIENT_ID = os.environ["STRAVA_CLIENT_ID"]
-STRAVA_CLIENT_SECRET = os.environ["STRAVA_CLIENT_SECRET"]
+# ==============================
+# 1. Google Sheets Authentication
+# ==============================
+google_creds = os.environ.get("GOOGLE_SHEETS_JSON")
+creds_dict = json.loads(google_creds)
 
-# Date range (example: whole August 2025)
-START_DATE = datetime.date(2025, 8, 1)
-END_DATE   = datetime.date(2025, 8, 31)
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+client = gspread.authorize(credentials)
 
-# Google Sheet details
-SHEET_NAME = "Strava Auth Codes"
-WORKSHEET  = "Sheet1"
+# Load sheet
+SHEET_URL = os.environ.get("SHEET_URL")  # stored in GitHub Secrets
+sheet = client.open_by_url(SHEET_URL).sheet1
 
-# =========================
-# AUTH TO GOOGLE SHEETS
-# =========================
-def get_sheet():
-    scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
-    creds_dict = json.loads(os.environ["GOOGLE_SHEETS_JSON"])  # stored in GitHub secret
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
-    return client.open(SHEET_NAME).worksheet(WORKSHEET)
+# Expected format: [Timestamp, AthleteName, RefreshToken]
+rows = sheet.get_all_values()
+header, data = rows[0], rows[1:]
 
-# =========================
-# STRAVA TOKEN REFRESH
-# =========================
-def refresh_access_token(refresh_token):
+# Convert to dict list
+athletes = [{"name": row[1], "refresh_token": row[2]} for row in data if len(row) >= 3]
+
+
+# ==============================
+# 2. Strava Token Exchange
+# ==============================
+STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
+STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
+
+def get_access_token(refresh_token):
     url = "https://www.strava.com/oauth/token"
     payload = {
         "client_id": STRAVA_CLIENT_ID,
@@ -41,81 +42,86 @@ def refresh_access_token(refresh_token):
         "grant_type": "refresh_token",
         "refresh_token": refresh_token
     }
-    resp = requests.post(url, data=payload)
-    if resp.status_code != 200:
-        raise Exception(f"Token refresh failed: {resp.text}")
-    data = resp.json()
-    return data["access_token"], data["refresh_token"], data["athlete"]["id"]
+    r = requests.post(url, data=payload)
+    if r.status_code == 200:
+        return r.json()["access_token"]
+    else:
+        print("❌ Token exchange failed:", r.text)
+        return None
 
-# =========================
-# GET ACTIVITIES
-# =========================
-def fetch_rides(access_token, after, before):
+
+# ==============================
+# 3. Fetch Activities
+# ==============================
+def fetch_activities(access_token, start_date, end_date):
     url = "https://www.strava.com/api/v3/athlete/activities"
     headers = {"Authorization": f"Bearer {access_token}"}
-    rides = []
-    page = 1
+    page, per_page = 1, 100
+    activities = []
+
     while True:
-        params = {"after": after, "before": before, "page": page, "per_page": 100}
+        params = {
+            "before": int(end_date.timestamp()),
+            "after": int(start_date.timestamp()),
+            "page": page,
+            "per_page": per_page,
+        }
         r = requests.get(url, headers=headers, params=params)
         if r.status_code != 200:
-            print("Error fetching activities:", r.text)
+            print("❌ Error fetching activities:", r.text)
             break
+
         data = r.json()
         if not data:
             break
-        for act in data:
-            if act["type"] == "Ride":
-                rides.append(act)
+        activities.extend(data)
         page += 1
-    return rides
 
-# =========================
-# MAIN
-# =========================
-def main():
-    ws = get_sheet()
-    rows = ws.get_all_records()  # expects columns: AthleteID, Name, RefreshToken
+    return activities
 
-    # Prepare leaderboard structure
-    all_days = pd.date_range(START_DATE, END_DATE)
-    leaderboard = { row["Name"]: { d.strftime("%d/%b"): 0.0 for d in all_days } for row in rows }
 
-    for row in rows:
-        athlete = row["Name"]
-        refresh_token = row["RefreshToken"]
+# ==============================
+# 4. Build Leaderboard
+# ==============================
+def build_leaderboard(month: str = "2025-08"):
+    # Setup date range
+    start_date = datetime.strptime(month, "%Y-%m")
+    days_in_month = (start_date.replace(month=start_date.month % 12 + 1, day=1) - timedelta(days=1)).day
+    end_date = start_date.replace(day=days_in_month, hour=23, minute=59, second=59)
 
-        try:
-            access_token, new_refresh, athlete_id = refresh_access_token(refresh_token)
+    # Prepare leaderboard DataFrame
+    days = [f"{day:02d}/{start_date.strftime('%b')}" for day in range(1, days_in_month + 1)]
+    leaderboard = pd.DataFrame(0, index=[a["name"] for a in athletes], columns=days)
 
-            # (Optional) update refresh token in Google Sheet if changed
-            if new_refresh != refresh_token:
-                cell = ws.find(refresh_token)
-                ws.update_cell(cell.row, cell.col, new_refresh)
+    for athlete in athletes:
+        print(f"➡ Fetching {athlete['name']}")
 
-            # Fetch rides
-            after = int(datetime.datetime.combine(START_DATE, datetime.time.min).timestamp())
-            before = int(datetime.datetime.combine(END_DATE + datetime.timedelta(days=1), datetime.time.min).timestamp())
-            rides = fetch_rides(access_token, after, before)
+        access_token = get_access_token(athlete["refresh_token"])
+        if not access_token:
+            continue
 
-            # Aggregate km per day
-            for ride in rides:
-                ride_date = datetime.datetime.strptime(ride["start_date_local"], "%Y-%m-%dT%H:%M:%SZ").date()
-                key = ride_date.strftime("%d/%b")
-                distance_km = ride["distance"] / 1000.0
-                if key in leaderboard[athlete]:
-                    leaderboard[athlete][key] += round(distance_km, 1)
+        activities = fetch_activities(access_token, start_date, end_date)
+        for act in activities:
+            if act.get("type") == "Ride":
+                act_date = datetime.strptime(act["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
+                col = f"{act_date.day:02d}/{act_date.strftime('%b')}"
+                distance_km = act["distance"] / 1000.0
+                leaderboard.loc[athlete["name"], col] += round(distance_km, 1)
 
-            print(f"✅ Processed {athlete}, {len(rides)} rides")
+    return leaderboard
 
-        except Exception as e:
-            print(f"❌ Error processing {athlete}: {e}")
 
-    # Save leaderboard to JSON
-    with open("data.json", "w") as f:
-        json.dump(leaderboard, f, indent=2)
-
-    print("🏆 Leaderboard built and saved to data.json")
-
+# ==============================
+# 5. Save Leaderboard
+# ==============================
 if __name__ == "__main__":
-    main()
+    leaderboard = build_leaderboard("2025-08")
+
+    # Save as CSV (for analysis)
+    leaderboard.to_csv("leaderboard.csv")
+
+    # Save as Markdown (for GitHub Pages)
+    with open("leaderboard.md", "w") as f:
+        f.write("# 🚴 Jalgaon Cyclist Club – August Leaderboard\n\n")
+        f.write(leaderboard.to_markdown())
+    print("✅ Leaderboard built and saved")
