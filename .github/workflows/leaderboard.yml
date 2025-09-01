@@ -1,0 +1,31 @@
+name: Build Leaderboard
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # run daily at 2am UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install deps
+        run: pip install requests gspread oauth2client pandas
+      - name: Run script
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
+        run: python build_leaderboard.py
+      - name: Commit data.json
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add data.json
+          git commit -m "Update leaderboard"
+          git push
