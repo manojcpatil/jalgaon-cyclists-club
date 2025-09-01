@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jalgaon Cyclist Club Leaderboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #fc4c02; /* Strava orange */
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 60%;
+      background: white;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #fc4c02;
+      color: white;
+    }
+    .connect-btn {
+      display: inline-block;
+      margin-top: 20px;
+    }
+    .connect-btn img {
+      height: 40px;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #666;
+    }
+    footer a {
+      color: #fc4c02;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚴 Jalgaon Cyclist Club Leaderboard</h1>
+  <p>Celebrating our daily and weekly riders!</p>
+
+  <!-- Example leaderboard table -->
+  <table>
+    <tr>
+      <th>Rank</th>
+      <th>Athlete</th>
+      <th>Distance (km)</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Alice</td>
+      <td>152</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Bob</td>
+      <td>136</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Charlie</td>
+      <td>120</td>
+    </tr>
+  </table>
+
+  <!-- Connect with Strava button -->
+  <div class="connect-btn">
+    <a href="https://www.strava.com/oauth/authorize?client_id=173295&response_type=code&redirect_uri=https://manojcpatil.github.io/index.html&scope=read,activity:read_all">
+      <img src="https://strava.github.io/api/images/ConnectWithStrava.png" alt="Connect with Strava">
+    </a>
+  </div>
+
+  <!-- Attribution -->
+  <footer>
+    Data provided by <a href="https://www.strava.com" target="_blank">Strava</a>.  
+    <br>Powered by Strava 🚴
+  </footer>
+</body>
+</html>
