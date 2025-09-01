@@ -4,10 +4,17 @@
   <meta charset="UTF-8">
   <title>Daily Riders Leaderboard</title>
   <style>
-    table { border-collapse: collapse; font-size: 14px; }
-    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-    th { background: #f4f4f4; }
-    td.zero { background: #f9f9f9; color: #aaa; }
+    table { border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; min-width: 35px; }
+    th { background: #f4f4f4; position: sticky; top: 0; }
+
+    /* Color codes */
+    .zero { background: #f9f9f9; color: #aaa; }
+    .low { background: #ffcccc; }       /* <10 km */
+    .medium { background: #fff6b3; }    /* 10–20 km */
+    .high { background: #c6f5c6; }      /* >20 km */
+
+    .total-col { font-weight: bold; background: #e6e6e6; }
   </style>
 </head>
 <body>
@@ -25,9 +32,14 @@
         data.riders.forEach(r => {
           html += `<tr><td>${r.name}</td>`;
           r.daily.forEach(km => {
-            html += `<td class="${km===0?'zero':''}">${km>0?km:''}</td>`;
+            let cls = "zero";
+            if (km > 20) cls = "high";
+            else if (km >= 10) cls = "medium";
+            else if (km > 0) cls = "low";
+
+            html += `<td class="${cls}">${km > 0 ? km : ""}</td>`;
           });
-          html += `<td><b>${r.total}</b></td></tr>`;
+          html += `<td class="total-col">${r.total}</td></tr>`;
         });
 
         html += `</table>`;
