@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Daily Riders Recognition - Jalgaon Cyclist Club</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #fc4c02;
+    }
+    .riders {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      width: 220px;
+      margin: 10px;
+      padding: 15px;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card h3 {
+      margin: 10px 0 5px;
+      color: #333;
+    }
+    .card p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #666;
+    }
+    footer a {
+      color: #fc4c02;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌟 Daily Riders Recognition</h1>
+  <p>Celebrating members who rode every day or at least 4 days this week!</p>
+
+  <div class="riders">
+    <!-- Example rider cards (replace with real data later) -->
+    <div class="card">
+      <h3>Alice</h3>
+      <p>7 days riding</p>
+      <p>Total: 210 km</p>
+    </div>
+    <div class="card">
+      <h3>Bob</h3>
+      <p>5 days riding</p>
+      <p>Total: 180 km</p>
+    </div>
+    <div class="card">
+      <h3>Charlie</h3>
+      <p>4 days riding</p>
+      <p>Total: 120 km</p>
+    </div>
+  </div>
+
+  <!-- Attribution -->
+  <footer>
+    Data provided by <a href="https://www.strava.com" target="_blank">Strava</a>.  
+    <br>Powered by Strava 🚴
+  </footer>
+</body>
+</html>
