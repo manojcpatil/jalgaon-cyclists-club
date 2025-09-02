@@ -1,55 +1,1126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Jalgaon Cyclist Club</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin:0; padding:0; }
-    header { background: #fc4c02; color: white; text-align: center; padding: 20px; }
-    main { max-width: 800px; margin: auto; padding: 20px; background: white; border-radius: 8px; }
-    h1 { color: #fc4c02; }
-    a.button {
-      display: inline-block;
-      padding: 12px 20px;
-      background: #fc4c02;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-      font-weight: bold;
-    }
-    footer { text-align: center; padding: 20px; font-size: 14px; color: #666; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jalgaon Cyclist Club - Ride Together, Grow Together</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'jalgaon-orange': '#FF6B35',
+                        'jalgaon-blue': '#1E40AF',
+                        'jalgaon-green': '#10B981',
+                        'jalgaon-yellow': '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #FF6B35 0%, #1E40AF 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: #FF6B35;
+            transform: translateY(-2px);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, rgba(255,107,53,0.1) 0%, rgba(30,64,175,0.1) 100%);
+        }
+        
+        .progress-bar {
+            transition: width 0.8s ease-in-out;
+        }
+        
+        .badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .gallery-item {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+        
+        .event-card {
+            border-left: 4px solid #FF6B35;
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <h1>🚴 Jalgaon Cyclist Club</h1>
-    <p>Raising awareness about cycling & celebrating consistent riders</p>
-  </header>
-  <main>
-    <h2>About Our Club</h2>
-    <p>
-      We are a community of passionate cyclists in Jalgaon.  
-      Our mission is to promote cycling as a healthy, fun, and eco-friendly lifestyle.  
-      Using Strava, we track rides and felicitate members who cycle daily or at least 4 days a week.
-    </p>
+<body class="bg-gray-50">
+    <!-- Sticky Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-gradient-to-r from-jalgaon-orange to-jalgaon-blue rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">🚴</span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <h1 class="text-xl font-bold text-gray-900">Jalgaon Cyclist Club</h1>
+                    </div>
+                </div>
+                
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#home" class="nav-link text-gray-900 font-medium" onclick="showSection('home')">Home</a>
+                        <a href="#events" class="nav-link text-gray-600 font-medium" onclick="showSection('events')">Events</a>
+                        <a href="#leaderboard" class="nav-link text-gray-600 font-medium" onclick="showSection('leaderboard')">Leaderboard</a>
+                        <a href="#gallery" class="nav-link text-gray-600 font-medium" onclick="showSection('gallery')">Gallery</a>
+                        <a href="#dashboard" class="nav-link text-gray-600 font-medium" onclick="showSection('dashboard')">Dashboard</a>
+                        <a href="#register" class="nav-link text-gray-600 font-medium" onclick="showSection('register')">Join Us</a>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-jalgaon-orange">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="#home" class="block px-3 py-2 text-gray-900 font-medium" onclick="showSection('home'); toggleMobileMenu()">Home</a>
+                <a href="#events" class="block px-3 py-2 text-gray-600 font-medium" onclick="showSection('events'); toggleMobileMenu()">Events</a>
+                <a href="#leaderboard" class="block px-3 py-2 text-gray-600 font-medium" onclick="showSection('leaderboard'); toggleMobileMenu()">Leaderboard</a>
+                <a href="#gallery" class="block px-3 py-2 text-gray-600 font-medium" onclick="showSection('gallery'); toggleMobileMenu()">Gallery</a>
+                <a href="#dashboard" class="block px-3 py-2 text-gray-600 font-medium" onclick="showSection('dashboard'); toggleMobileMenu()">Dashboard</a>
+                <a href="#register" class="block px-3 py-2 text-gray-600 font-medium" onclick="showSection('register'); toggleMobileMenu()">Join Us</a>
+            </div>
+        </div>
+    </nav>
 
-    <h2>Why Strava Integration?</h2>
-    <p>
-      With our Strava-powered app, we can fairly measure member participation, create leaderboards, 
-      and recognize the efforts of consistent riders. This encourages more people to ride and 
-      builds a stronger cycling culture in Jalgaon.
-    </p>
+    <!-- Home Section -->
+    <div id="home" class="section">
+        <!-- Hero Section -->
+        <div class="hero-gradient text-white py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-5xl md:text-6xl font-bold mb-6">Ride Together, Grow Together</h1>
+                <p class="text-xl md:text-2xl mb-8 opacity-90">Join Jalgaon's most vibrant cycling community and discover the joy of riding with fellow enthusiasts</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                    <button onclick="showSection('register')" class="bg-white text-jalgaon-orange px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">
+                        Join the Club 🚴‍♂️
+                    </button>
+                    <button onclick="showSection('events')" class="border-2 border-white text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-white hover:text-jalgaon-orange transition-all duration-300">
+                        View Events 📅
+                    </button>
+                </div>
+                
+                <!-- Live Stats Widget -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md mx-auto">
+                    <h3 class="text-lg font-semibold mb-4">🏆 Today's Champion</h3>
+                    <div class="text-2xl font-bold mb-2">Rahul Patil</div>
+                    <div class="text-sm opacity-90">45.2 km • Morning Ride</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div class="stats-card rounded-2xl p-6 text-center">
+                        <div class="text-3xl font-bold text-jalgaon-orange mb-2">250+</div>
+                        <div class="text-gray-600">Active Members</div>
+                    </div>
+                    <div class="stats-card rounded-2xl p-6 text-center">
+                        <div class="text-3xl font-bold text-jalgaon-blue mb-2">15,000+</div>
+                        <div class="text-gray-600">KM This Month</div>
+                    </div>
+                    <div class="stats-card rounded-2xl p-6 text-center">
+                        <div class="text-3xl font-bold text-jalgaon-green mb-2">48</div>
+                        <div class="text-gray-600">Rides Completed</div>
+                    </div>
+                    <div class="stats-card rounded-2xl p-6 text-center">
+                        <div class="text-3xl font-bold text-jalgaon-yellow mb-2">12</div>
+                        <div class="text-gray-600">Upcoming Events</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity Carousel -->
+        <div class="py-16 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-center mb-12">Recent Adventures</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-lg">
+                        <div class="h-48 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                            <span class="text-6xl">🌄</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">Ajanta Caves Expedition</h3>
+                            <p class="text-gray-600 mb-4">85 km journey to the historic caves with 32 riders</p>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <span>📅 Dec 15, 2024</span>
+                                <span class="ml-4">👥 32 riders</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-lg">
+                        <div class="h-48 bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center">
+                            <span class="text-6xl">🏆</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">Monthly Challenge Winner</h3>
+                            <p class="text-gray-600 mb-4">Congratulations to Priya Shah for 500+ km!</p>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <span>🥇 1st Place</span>
+                                <span class="ml-4">🚴‍♀️ 523 km</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-hover bg-white rounded-2xl overflow-hidden shadow-lg">
+                        <div class="h-48 bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <span class="text-6xl">🎉</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">New Member Welcome</h3>
+                            <p class="text-gray-600 mb-4">15 new cyclists joined us this week!</p>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <span>👋 Welcome</span>
+                                <span class="ml-4">🎯 Growing strong</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <h2>Join Us</h2>
-    <p>
-      If you’re a member of Jalgaon Cyclist Club, you can connect your Strava account below.
-    </p>
-    <a class="button" href="https://www.strava.com/oauth/authorize?client_id=173295&response_type=code&redirect_uri=https://manojcpatil.github.io/jalgaon-cyclist-club/&approval_prompt=force&scope=read,activity:read_all">
-      Connect with Strava
-    </a>
-  </main>
-  <footer>
-    <p>&copy; 2025 Jalgaon Cyclist Club | <a href="privacy.html">Privacy Policy</a></p>
-  </footer>
-</body>
+    <!-- Events Section -->
+    <div id="events" class="section hidden">
+        <div class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Upcoming Events</h2>
+                    <p class="text-xl text-gray-600">Join us for exciting rides and challenges</p>
+                </div>
+                
+                <!-- Filter Tabs -->
+                <div class="flex flex-wrap justify-center gap-4 mb-8">
+                    <button onclick="filterEvents('all')" class="filter-btn active bg-jalgaon-orange text-white px-6 py-3 rounded-xl font-medium">All Events</button>
+                    <button onclick="filterEvents('casual')" class="filter-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Casual Rides</button>
+                    <button onclick="filterEvents('endurance')" class="filter-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Endurance</button>
+                    <button onclick="filterEvents('competitive')" class="filter-btn bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Competitive</button>
+                </div>
+                
+                <!-- Events Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="event-card casual bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                            <span class="text-6xl">🌅</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Casual</span>
+                                <span class="text-gray-500 text-sm">Dec 22, 2024</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Morning Heritage Ride</h3>
+                            <p class="text-gray-600 mb-4">Explore Jalgaon's historical landmarks on this relaxed 25km ride</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-500">📍 Gandhi Garden</span>
+                                <span class="text-sm text-gray-500">⏰ 6:00 AM</span>
+                            </div>
+                            <button class="w-full bg-jalgaon-orange text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                                Join Ride 🚴‍♂️
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card endurance bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center">
+                            <span class="text-6xl">⛰️</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">Endurance</span>
+                                <span class="text-gray-500 text-sm">Dec 24, 2024</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Ajanta Hills Challenge</h3>
+                            <p class="text-gray-600 mb-4">Test your limits on this challenging 75km hill climb adventure</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-500">📍 Ajanta Base</span>
+                                <span class="text-sm text-gray-500">⏰ 5:30 AM</span>
+                            </div>
+                            <button class="w-full bg-jalgaon-orange text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                                Join Ride 💪
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="event-card competitive bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-r from-red-400 to-yellow-500 flex items-center justify-center">
+                            <span class="text-6xl">🏁</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">Competitive</span>
+                                <span class="text-gray-500 text-sm">Dec 26, 2024</span>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">New Year Sprint Race</h3>
+                            <p class="text-gray-600 mb-4">Fast-paced 40km race with prizes for top performers</p>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-500">📍 Sports Complex</span>
+                                <span class="text-sm text-gray-500">⏰ 7:00 AM</span>
+                            </div>
+                            <button class="w-full bg-jalgaon-orange text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                                Register Now 🏆
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div id="leaderboard" class="section hidden">
+        <div class="py-16 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">🏆 Leaderboard</h2>
+                    <p class="text-xl text-gray-600">See who's leading the pack this month</p>
+                </div>
+                
+                <!-- Leaderboard Tabs -->
+                <div class="flex flex-wrap justify-center gap-4 mb-8">
+                    <button onclick="showLeaderboard('daily')" class="leaderboard-tab active bg-jalgaon-orange text-white px-6 py-3 rounded-xl font-medium">Daily</button>
+                    <button onclick="showLeaderboard('weekly')" class="leaderboard-tab bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Weekly</button>
+                    <button onclick="showLeaderboard('monthly')" class="leaderboard-tab bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Monthly</button>
+                </div>
+                
+                <!-- Leaderboard Table -->
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-4 px-4 font-semibold text-gray-900">Rank</th>
+                                        <th class="text-left py-4 px-4 font-semibold text-gray-900">Rider</th>
+                                        <th class="text-left py-4 px-4 font-semibold text-gray-900">Distance</th>
+                                        <th class="text-left py-4 px-4 font-semibold text-gray-900">Rides</th>
+                                        <th class="text-left py-4 px-4 font-semibold text-gray-900">Streak</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-body">
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <span class="text-2xl mr-2">🥇</span>
+                                                <span class="font-bold text-jalgaon-orange">1</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-gradient-to-r from-jalgaon-orange to-jalgaon-blue rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                                    RP
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold">Rahul Patil</div>
+                                                    <div class="text-sm text-gray-500">Pro Rider</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 font-semibold text-jalgaon-orange">45.2 km</td>
+                                        <td class="py-4 px-4">3</td>
+                                        <td class="py-4 px-4">
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">7 days</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <span class="text-2xl mr-2">🥈</span>
+                                                <span class="font-bold text-gray-600">2</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                                    PS
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold">Priya Shah</div>
+                                                    <div class="text-sm text-gray-500">Endurance Expert</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 font-semibold text-gray-700">42.8 km</td>
+                                        <td class="py-4 px-4">2</td>
+                                        <td class="py-4 px-4">
+                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">5 days</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <span class="text-2xl mr-2">🥉</span>
+                                                <span class="font-bold text-gray-600">3</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                                    AK
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold">Amit Kumar</div>
+                                                    <div class="text-sm text-gray-500">Speed Demon</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4 font-semibold text-gray-700">38.5 km</td>
+                                        <td class="py-4 px-4">2</td>
+                                        <td class="py-4 px-4">
+                                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">3 days</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Section -->
+    <div id="gallery" class="section hidden">
+        <div class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">📸 Gallery</h2>
+                    <p class="text-xl text-gray-600">Memories from our amazing rides</p>
+                </div>
+                
+                <!-- Gallery Filter -->
+                <div class="flex flex-wrap justify-center gap-4 mb-8">
+                    <button onclick="filterGallery('all')" class="gallery-filter active bg-jalgaon-orange text-white px-6 py-3 rounded-xl font-medium">All Photos</button>
+                    <button onclick="filterGallery('rides')" class="gallery-filter bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Rides</button>
+                    <button onclick="filterGallery('races')" class="gallery-filter bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Races</button>
+                    <button onclick="filterGallery('social')" class="gallery-filter bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-gray-300">Social</button>
+                </div>
+                
+                <!-- Gallery Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="gallery-item rides bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(0)">
+                        <div class="h-64 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🌄</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Ajanta Caves Expedition</h3>
+                            <p class="text-sm text-gray-600">Dec 15, 2024 • 32 riders</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item races bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(1)">
+                        <div class="h-64 bg-gradient-to-r from-red-400 to-yellow-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🏁</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Sprint Championship</h3>
+                            <p class="text-sm text-gray-600">Dec 10, 2024 • Race Day</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item social bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(2)">
+                        <div class="h-64 bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🎉</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Club Anniversary</h3>
+                            <p class="text-sm text-gray-600">Dec 5, 2024 • Celebration</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item rides bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(3)">
+                        <div class="h-64 bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🌅</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Sunrise Ride</h3>
+                            <p class="text-sm text-gray-600">Dec 8, 2024 • Morning Glory</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item social bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(4)">
+                        <div class="h-64 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🍕</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Post-Ride Feast</h3>
+                            <p class="text-sm text-gray-600">Dec 12, 2024 • Food & Fun</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item races bg-white rounded-2xl overflow-hidden shadow-lg cursor-pointer" onclick="openLightbox(5)">
+                        <div class="h-64 bg-gradient-to-r from-green-400 to-teal-500 flex items-center justify-center relative">
+                            <span class="text-6xl">🏆</span>
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                <span class="text-white opacity-0 hover:opacity-100 text-lg font-semibold">View Photo</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold mb-1">Victory Ceremony</h3>
+                            <p class="text-sm text-gray-600">Dec 1, 2024 • Awards Night</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="section hidden">
+        <div class="py-16 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">🎯 Your Dashboard</h2>
+                    <p class="text-xl text-gray-600">Track your progress and achievements</p>
+                </div>
+                
+                <!-- Profile Card -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                    <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                        <div class="w-24 h-24 bg-gradient-to-r from-jalgaon-orange to-jalgaon-blue rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            YN
+                        </div>
+                        <div class="flex-1 text-center md:text-left">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Your Name</h3>
+                            <p class="text-gray-600 mb-4">Passionate cyclist from Jalgaon • Member since Dec 2024</p>
+                            <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                                <span class="badge bg-jalgaon-orange text-white px-3 py-1 rounded-full text-sm">🔥 5 Day Streak</span>
+                                <span class="badge bg-jalgaon-green text-white px-3 py-1 rounded-full text-sm">🏆 100km Club</span>
+                                <span class="badge bg-jalgaon-blue text-white px-3 py-1 rounded-full text-sm">⭐ Rising Star</span>
+                            </div>
+                        </div>
+                        <button class="bg-gray-100 text-gray-700 px-6 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                            Edit Profile
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">Today's Goal</h4>
+                            <span class="text-2xl">🎯</span>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-600">15 / 25 km</span>
+                                <span class="text-sm font-semibold text-jalgaon-orange">60%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="progress-bar bg-jalgaon-orange h-3 rounded-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <button onclick="logRide()" class="w-full bg-jalgaon-orange text-white py-2 rounded-xl font-medium hover:bg-orange-600 transition-colors">
+                            Log Today's Ride
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">This Week</h4>
+                            <span class="text-2xl">📊</span>
+                        </div>
+                        <div class="text-3xl font-bold text-jalgaon-blue mb-2">127 km</div>
+                        <div class="text-sm text-gray-600">5 rides completed</div>
+                        <div class="text-sm text-green-600 mt-2">↗️ +15% from last week</div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">This Month</h4>
+                            <span class="text-2xl">🗓️</span>
+                        </div>
+                        <div class="text-3xl font-bold text-jalgaon-green mb-2">523 km</div>
+                        <div class="text-sm text-gray-600">18 rides completed</div>
+                        <div class="text-sm text-green-600 mt-2">🏆 Personal best!</div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-semibold text-gray-900">Rank</h4>
+                            <span class="text-2xl">🏅</span>
+                        </div>
+                        <div class="text-3xl font-bold text-jalgaon-yellow mb-2">#12</div>
+                        <div class="text-sm text-gray-600">Out of 250 members</div>
+                        <div class="text-sm text-blue-600 mt-2">↗️ Up 3 positions</div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl shadow-lg p-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-12 h-12 bg-jalgaon-orange rounded-full flex items-center justify-center text-white">
+                                🚴‍♂️
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold">Morning Heritage Ride</h4>
+                                <p class="text-sm text-gray-600">25.3 km • 1h 15m • Dec 20, 2024</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-jalgaon-orange">+25 pts</div>
+                                <div class="text-sm text-gray-500">Personal best</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-12 h-12 bg-jalgaon-blue rounded-full flex items-center justify-center text-white">
+                                🏆
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold">Achievement Unlocked</h4>
+                                <p class="text-sm text-gray-600">100km Club Badge • Dec 19, 2024</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-jalgaon-blue">+50 pts</div>
+                                <div class="text-sm text-gray-500">Milestone</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                            <div class="w-12 h-12 bg-jalgaon-green rounded-full flex items-center justify-center text-white">
+                                👥
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold">Group Ride Joined</h4>
+                                <p class="text-sm text-gray-600">Evening Social Ride • Dec 18, 2024</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-jalgaon-green">+15 pts</div>
+                                <div class="text-sm text-gray-500">Social bonus</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Section -->
+    <div id="register" class="section hidden">
+        <div class="py-16 bg-white">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">🚴‍♂️ Join Our Community</h2>
+                    <p class="text-xl text-gray-600">Start your cycling journey with Jalgaon's most welcoming club</p>
+                </div>
+                
+                <!-- Registration Form -->
+                <div class="bg-white rounded-2xl shadow-lg p-8">
+                    <form id="registration-form" onsubmit="handleRegistration(event)">
+                        <!-- Step 1: Personal Info -->
+                        <div id="step-1" class="form-step">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-2xl font-semibold text-gray-900">Personal Information</h3>
+                                <span class="bg-jalgaon-orange text-white px-3 py-1 rounded-full text-sm">Step 1 of 3</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">👤 Full Name</label>
+                                    <input type="text" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent" placeholder="Enter your full name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">📧 Email Address</label>
+                                    <input type="email" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent" placeholder="your.email@example.com">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">📱 Phone Number</label>
+                                    <input type="tel" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent" placeholder="+91 98765 43210">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">🎂 Age</label>
+                                    <input type="number" required min="16" max="80" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent" placeholder="25">
+                                </div>
+                            </div>
+                            
+                            <button type="button" onclick="nextStep(2)" class="w-full bg-jalgaon-orange text-white py-4 rounded-xl font-semibold text-lg hover:bg-orange-600 transition-colors">
+                                Continue to Cycling Info →
+                            </button>
+                        </div>
+                        
+                        <!-- Step 2: Cycling Info -->
+                        <div id="step-2" class="form-step hidden">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-2xl font-semibold text-gray-900">Cycling Experience</h3>
+                                <span class="bg-jalgaon-orange text-white px-3 py-1 rounded-full text-sm">Step 2 of 3</span>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">🚴‍♂️ Experience Level</label>
+                                <select required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent">
+                                    <option value="">Select your level</option>
+                                    <option value="beginner">Beginner (0-6 months)</option>
+                                    <option value="intermediate">Intermediate (6 months - 2 years)</option>
+                                    <option value="advanced">Advanced (2+ years)</option>
+                                    <option value="expert">Expert/Competitive</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">🚲 Bike Type</label>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <label class="flex items-center p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="radio" name="bike-type" value="road" class="mr-3">
+                                        <span>🏁 Road</span>
+                                    </label>
+                                    <label class="flex items-center p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="radio" name="bike-type" value="mountain" class="mr-3">
+                                        <span>⛰️ Mountain</span>
+                                    </label>
+                                    <label class="flex items-center p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="radio" name="bike-type" value="hybrid" class="mr-3">
+                                        <span>🚴‍♂️ Hybrid</span>
+                                    </label>
+                                    <label class="flex items-center p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="radio" name="bike-type" value="other" class="mr-3">
+                                        <span>🔧 Other</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">🎯 Goals & Interests</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="checkbox" name="goals" value="fitness" class="mr-3">
+                                        <span>💪 Fitness & Health</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="checkbox" name="goals" value="social" class="mr-3">
+                                        <span>👥 Social Riding</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="checkbox" name="goals" value="competitive" class="mr-3">
+                                        <span>🏆 Competitive Racing</span>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                        <input type="checkbox" name="goals" value="touring" class="mr-3">
+                                        <span>🌄 Long Distance Touring</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-4">
+                                <button type="button" onclick="prevStep(1)" class="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+                                    ← Back
+                                </button>
+                                <button type="button" onclick="nextStep(3)" class="flex-1 bg-jalgaon-orange text-white py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                                    Continue to Final Step →
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Final Details -->
+                        <div id="step-3" class="form-step hidden">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-2xl font-semibold text-gray-900">Almost Done!</h3>
+                                <span class="bg-jalgaon-orange text-white px-3 py-1 rounded-full text-sm">Step 3 of 3</span>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">📸 Profile Photo (Optional)</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-jalgaon-orange transition-colors cursor-pointer" onclick="document.getElementById('photo-upload').click()">
+                                    <input type="file" id="photo-upload" accept="image/*" class="hidden">
+                                    <div class="text-4xl mb-4">📷</div>
+                                    <p class="text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-sm text-gray-500 mt-2">PNG, JPG up to 5MB</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">💬 Tell us about yourself (Optional)</label>
+                                <textarea rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-jalgaon-orange focus:border-transparent" placeholder="Share your cycling story, favorite routes, or what you're looking forward to..."></textarea>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <label class="flex items-start p-4 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
+                                    <input type="checkbox" required class="mt-1 mr-3">
+                                    <span class="text-sm text-gray-700">
+                                        I agree to the <a href="#" class="text-jalgaon-orange hover:underline">Terms & Conditions</a> and 
+                                        <a href="#" class="text-jalgaon-orange hover:underline">Privacy Policy</a>. I understand that participation in cycling activities involves inherent risks.
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex gap-4">
+                                <button type="button" onclick="prevStep(2)" class="flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+                                    ← Back
+                                </button>
+                                <button type="submit" class="flex-1 bg-jalgaon-orange text-white py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                                    🎉 Join the Club!
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button id="floating-btn" class="floating-btn bg-jalgaon-orange text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl" onclick="handleFloatingAction()">
+        🚴‍♂️
+    </button>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="relative max-w-4xl max-h-full">
+            <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-2xl z-10 bg-black bg-opacity-50 w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-75">
+                ×
+            </button>
+            <div id="lightbox-content" class="bg-white rounded-2xl overflow-hidden">
+                <!-- Lightbox content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentSection = 'home';
+        let currentStep = 1;
+        let currentLightboxIndex = 0;
+        
+        // Sample gallery data
+        const galleryData = [
+            { title: 'Ajanta Caves Expedition', date: 'Dec 15, 2024', category: 'rides', emoji: '🌄' },
+            { title: 'Sprint Championship', date: 'Dec 10, 2024', category: 'races', emoji: '🏁' },
+            { title: 'Club Anniversary', date: 'Dec 5, 2024', category: 'social', emoji: '🎉' },
+            { title: 'Sunrise Ride', date: 'Dec 8, 2024', category: 'rides', emoji: '🌅' },
+            { title: 'Post-Ride Feast', date: 'Dec 12, 2024', category: 'social', emoji: '🍕' },
+            { title: 'Victory Ceremony', date: 'Dec 1, 2024', category: 'races', emoji: '🏆' }
+        ];
+        
+        // Navigation functions
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-jalgaon-orange');
+                link.classList.add('text-gray-600');
+            });
+            
+            document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.remove('text-gray-600');
+            document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('text-jalgaon-orange');
+            
+            currentSection = sectionId;
+            updateFloatingButton();
+        }
+        
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Floating button functionality
+        function updateFloatingButton() {
+            const btn = document.getElementById('floating-btn');
+            switch(currentSection) {
+                case 'events':
+                    btn.innerHTML = '📅';
+                    break;
+                case 'leaderboard':
+                    btn.innerHTML = '📊';
+                    break;
+                case 'dashboard':
+                    btn.innerHTML = '📝';
+                    break;
+                case 'gallery':
+                    btn.innerHTML = '📸';
+                    break;
+                case 'register':
+                    btn.innerHTML = '✨';
+                    break;
+                default:
+                    btn.innerHTML = '🚴‍♂️';
+            }
+        }
+        
+        function handleFloatingAction() {
+            switch(currentSection) {
+                case 'events':
+                    alert('🎉 Event registration feature coming soon!');
+                    break;
+                case 'leaderboard':
+                    alert('📊 Leaderboard sync feature for admins coming soon!');
+                    break;
+                case 'dashboard':
+                    logRide();
+                    break;
+                case 'gallery':
+                    alert('📸 Photo upload feature coming soon!');
+                    break;
+                case 'register':
+                    document.getElementById('registration-form').scrollIntoView({ behavior: 'smooth' });
+                    break;
+                default:
+                    showSection('register');
+            }
+        }
+        
+        // Registration form functions
+        function nextStep(step) {
+            document.getElementById(`step-${currentStep}`).classList.add('hidden');
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+            currentStep = step;
+        }
+        
+        function prevStep(step) {
+            document.getElementById(`step-${currentStep}`).classList.add('hidden');
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+            currentStep = step;
+        }
+        
+        function handleRegistration(event) {
+            event.preventDefault();
+            
+            // Show success animation
+            const form = document.getElementById('registration-form');
+            form.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-6">🎉</div>
+                    <h3 class="text-3xl font-bold text-jalgaon-orange mb-4">Welcome to the Club!</h3>
+                    <p class="text-xl text-gray-600 mb-8">Your registration has been submitted successfully. We'll contact you within 24 hours with next steps.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="showSection('dashboard')" class="bg-jalgaon-orange text-white px-8 py-4 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                            Go to Dashboard 🎯
+                        </button>
+                        <button onclick="showSection('events')" class="border-2 border-jalgaon-orange text-jalgaon-orange px-8 py-4 rounded-xl font-semibold hover:bg-jalgaon-orange hover:text-white transition-colors">
+                            View Events 📅
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Filter functions
+        function filterEvents(category) {
+            const events = document.querySelectorAll('.event-card');
+            const buttons = document.querySelectorAll('.filter-btn');
+            
+            // Update button states
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-jalgaon-orange', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-jalgaon-orange', 'text-white');
+            
+            // Filter events
+            events.forEach(eventCard => {
+                if (category === 'all' || eventCard.classList.contains(category)) {
+                    eventCard.style.display = 'block';
+                } else {
+                    eventCard.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterGallery(category) {
+            const items = document.querySelectorAll('.gallery-item');
+            const buttons = document.querySelectorAll('.gallery-filter');
+            
+            // Update button states
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-jalgaon-orange', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-jalgaon-orange', 'text-white');
+            
+            // Filter gallery items
+            items.forEach(item => {
+                if (category === 'all' || item.classList.contains(category)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // Leaderboard functions
+        function showLeaderboard(period) {
+            const buttons = document.querySelectorAll('.leaderboard-tab');
+            
+            // Update button states
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-jalgaon-orange', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('bg-gray-200', 'text-gray-700');
+            event.target.classList.add('bg-jalgaon-orange', 'text-white');
+            
+            // Here you would typically fetch and display different leaderboard data
+            // For now, we'll just show a message
+            console.log(`Showing ${period} leaderboard`);
+        }
+        
+        // Dashboard functions
+        function logRide() {
+            const distance = prompt('How many kilometers did you ride today? 🚴‍♂️');
+            if (distance && !isNaN(distance) && distance > 0) {
+                alert(`🎉 Great job! ${distance}km logged successfully. Keep up the amazing work!`);
+                // Here you would typically update the dashboard with the new data
+            }
+        }
+        
+        // Lightbox functions
+        function openLightbox(index) {
+            currentLightboxIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const content = document.getElementById('lightbox-content');
+            const data = galleryData[index];
+            
+            content.innerHTML = `
+                <div class="h-96 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                    <span class="text-8xl">${data.emoji}</span>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-2xl font-bold mb-2">${data.title}</h3>
+                    <p class="text-gray-600 mb-4">${data.date}</p>
+                    <div class="flex gap-4">
+                        <button onclick="prevImage()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">← Previous</button>
+                        <button onclick="nextImage()" class="bg-jalgaon-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600">Next →</button>
+                    </div>
+                </div>
+            `;
+            
+            lightbox.classList.remove('hidden');
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+        }
+        
+        function nextImage() {
+            currentLightboxIndex = (currentLightboxIndex + 1) % galleryData.length;
+            openLightbox(currentLightboxIndex);
+        }
+        
+        function prevImage() {
+            currentLightboxIndex = (currentLightboxIndex - 1 + galleryData.length) % galleryData.length;
+            openLightbox(currentLightboxIndex);
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFloatingButton();
+            
+            // Close lightbox when clicking outside
+            document.getElementById('lightbox').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeLightbox();
+                }
+            });
+            
+            // Handle photo upload preview
+            document.getElementById('photo-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.createElement('div');
+                        preview.innerHTML = `
+                            <div class="text-center">
+                                <img src="${e.target.result}" alt="Preview" class="w-24 h-24 rounded-full mx-auto mb-2 object-cover">
+                                <p class="text-sm text-green-600">✓ Photo uploaded successfully</p>
+                            </div>
+                        `;
+                        e.target.parentElement.parentElement.replaceWith(preview);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9785caf5a7177aa2',t:'MTc1Njc0MDQ1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
