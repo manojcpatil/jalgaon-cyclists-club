@@ -160,7 +160,7 @@ def build_leaderboard(start_date: str, end_date: str):
     # Add total column at the end
     leaderboard["Total"] = leaderboard.sum(axis=1)
 	# Sort by Total descending
-	leaderboard = leaderboard.sort_values("Total", ascending=False)
+	#leaderboard = leaderboard.sort_values("Total", ascending=False)
 
     # Round only at the very end
     return leaderboard.round(1)
