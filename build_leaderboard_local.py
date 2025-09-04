@@ -164,6 +164,14 @@ def build_leaderboard(start_date: str, end_date: str):
     return leaderboard.round(1)
 
 
+def color_rows_by_total(row):
+    total = row["Total"]
+    if total >= 200:   # high mileage
+        return ["background-color: lightgreen"] * len(row)
+    elif total >= 100: # medium mileage
+        return ["background-color: lightyellow"] * len(row)
+    else:              # low mileage
+        return ["background-color: lightcoral"] * len(row)
 
 
 # ==============================
@@ -229,8 +237,8 @@ with open("leaderboard.html", "w", encoding="utf-8") as f:
     </head>
     <body>
         <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
-    """)
-    f.write(leaderboard.to_html(escape=False))
+    """)    
+    f.write(leaderboard.style.apply(color_rows_by_total, axis=1).to_html(escape=False))
     f.write("""
 	<h1>🚴 Powered by Strava</h1>
     </body>
