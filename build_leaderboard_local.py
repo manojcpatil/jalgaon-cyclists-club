@@ -153,7 +153,7 @@ def build_leaderboard(start_date: str, end_date: str):
 # 5. Save Leaderboard
 # ==============================
 if __name__ == "__main__":
-    leaderboard = build_leaderboard("2025-08-01", "2025-08-31")
+    leaderboard = build_leaderboard("2025-08-15", "2025-09-30")
 
     # Save as CSV (for analysis)
     leaderboard.to_csv("leaderboard.csv")
