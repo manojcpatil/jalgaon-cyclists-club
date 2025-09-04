@@ -85,6 +85,7 @@ def fetch_activities(access_token, start_date, end_date):
     page, per_page = 1, 100
     activities = []
 	end_date += timedelta(days=1)
+
     while True:
         params = {
             "before": int(end_date.timestamp()),
