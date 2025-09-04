@@ -109,31 +109,43 @@ def fetch_activities(access_token, start_date, end_date):
 # ==============================
 # 4. Build Leaderboard
 # ==============================
+
+from datetime import datetime, timedelta
+import pandas as pd
+
 def build_leaderboard(start_date: str, end_date: str):
     """
-    Build leaderboard for a custom date range.
+    Build leaderboard for a custom date range (up to today).
     Args:
-        start_date (str): in format "YYYY-MM-DD"
-        end_date   (str): in format "YYYY-MM-DD"
+        start_date (str): "YYYY-MM-DD"
+        end_date   (str): "YYYY-MM-DD"
     """
-    # Convert strings to datetime objects
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
     end_dt   = datetime.strptime(end_date, "%Y-%m-%d")
 
-    # Build list of days (DD/MM format with month number, not abbrev)
+    # Don't go beyond today's date
+    today = datetime.today()
+    if end_dt > today:
+        end_dt = today
+
+    # Build list of day labels (DD/MM, but add year if range spans > 1 year)
+    if start_dt.year != end_dt.year:
+        date_fmt = "%d/%m/%y"
+    else:
+        date_fmt = "%d/%m"
+
     days = [
-        (start_dt + timedelta(days=i)).strftime("%d/%m")
+        (start_dt + timedelta(days=i)).strftime(date_fmt)
         for i in range((end_dt - start_dt).days + 1)
     ]
 
-    # Prepare leaderboard DataFrame
-    leaderboard = pd.DataFrame(0, index=[a["name"] for a in athletes], columns=days)
+    leaderboard = pd.DataFrame(0.0, index=[a["name"] for a in athletes], columns=days)
 
     for athlete in athletes:
         print(f"➡ Fetching {athlete['name']}")
-
         access_token = get_access_token(athlete["refresh_token"])
         if not access_token:
+            print(f"⚠ Skipping {athlete['name']} (no access token)")
             continue
 
         activities = fetch_activities(access_token, start_dt, end_dt)
@@ -141,11 +153,16 @@ def build_leaderboard(start_date: str, end_date: str):
             if act.get("type") == "Ride":
                 act_date = datetime.strptime(act["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
                 if start_dt <= act_date <= end_dt:
-                    col = act_date.strftime("%d/%m")
+                    col = act_date.strftime(date_fmt)
                     distance_km = act["distance"] / 1000.0
-                    leaderboard.loc[athlete["name"], col] += round(distance_km, 1)
+                    leaderboard.loc[athlete["name"], col] += distance_km
 
-    return leaderboard
+    # Add total column at the end
+    leaderboard["Total"] = leaderboard.sum(axis=1)
+
+    # Round only at the very end
+    return leaderboard.round(1)
+
 
 
 
@@ -160,7 +177,7 @@ if __name__ == "__main__":
 
     # Save as Markdown (for GitHub Pages content)
     with open("leaderboard.md", "w", encoding="utf-8") as f:
-        f.write("# 🚴 Jalgaon Cyclist Club – August Leaderboard\n\n")
+        f.write("# 🚴 Jalgaon Cyclist Club – Daily Leaderboard\n\n")
         f.write(leaderboard.to_markdown())
 
 # 🔥 Save as HTML (for direct viewing on GitHub Pages)
@@ -211,10 +228,11 @@ with open("leaderboard.html", "w", encoding="utf-8") as f:
         </style>
     </head>
     <body>
-        <h1>🚴 Jalgaon Cyclist Club – August Leaderboard</h1>
+        <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
     """)
     f.write(leaderboard.to_html(escape=False))
     f.write("""
+	<h1>🚴 Powered by Strava</h1>
     </body>
     </html>
     """)
