@@ -171,6 +171,7 @@ with open("leaderboard.html", "w", encoding="utf-8") as f:
     <head>
         <meta charset="utf-8">
         <title>Jalgaon Cyclist Club Leaderboard</title>
+        <title>powered by Strava</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
