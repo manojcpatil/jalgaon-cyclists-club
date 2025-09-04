@@ -238,7 +238,7 @@ with open("leaderboard.html", "w", encoding="utf-8") as f:
     <body>
         <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
     """)    
-    f.write(leaderboard.style.apply(color_rows_by_total, axis=1).to_html(escape=False))
+    f.write(leaderboard.round(1).style.apply(color_rows_by_total, axis=1).to_html(escape=False))
     f.write("""
 	<h1>🚴 Powered by Strava</h1>
     </body>
