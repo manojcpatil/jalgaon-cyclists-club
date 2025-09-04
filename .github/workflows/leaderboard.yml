@@ -24,7 +24,7 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests gspread oauth2client pandas tabulate
+          pip install requests gspread oauth2client pandas tabulate jinja2
 
       - name: 🔑 Run leaderboard script
         env:
