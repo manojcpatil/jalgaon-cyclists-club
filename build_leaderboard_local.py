@@ -126,7 +126,7 @@ def build_leaderboard(start_date: str, end_date: str):
     # Thresholds (in km)
     thresholds = {
         "Ride": 15,
-        "Run": 10,
+        "Run": 5,
         "Walk": 5
     }
 
