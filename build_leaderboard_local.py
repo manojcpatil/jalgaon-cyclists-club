@@ -207,6 +207,22 @@ if __name__ == "__main__":
         f.write("# 🚴 Jalgaon Cyclist Club – Daily Leaderboard\n\n")
         f.write(leaderboard.to_markdown())
 
+    # Prepare formatters: daily columns -> blank_zero, totals -> one decimal, Active_Days -> integer
+    daily_cols = [c for c in leaderboard.columns if c not in SUMMARY_COLS]
+
+    formatters = {col: blank_zero for col in daily_cols}
+    # keep Total numeric with 1 decimal
+    formatters["Total"] = lambda v: "" if pd.isna(v) else f"{v:.1f}"
+    # Active_Days as integer (no decimals)
+    formatters["Active_Days"] = lambda v: "" if pd.isna(v) else f"{int(v)}"
+
+    # Apply styling and formatting (no mutation of leaderboard values)
+    styled = (
+        leaderboard.style
+        .apply(color_cells_by_threshold, axis=1)
+        .format(formatters)
+    )
+    
     with open("leaderboard.html", "w", encoding="utf-8") as f:
         f.write("""
         <!DOCTYPE html>
@@ -255,7 +271,8 @@ if __name__ == "__main__":
         <body>
             <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
         """)    
-        f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format(blank_zero).to_html(escape=False))
+        # f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format(blank_zero).to_html(escape=False))
+        f.write(styled.to_html(escape=False))
         f.write("""
         <a href="https://www.strava.com" target="_blank">
         <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
