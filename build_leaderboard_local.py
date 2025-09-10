@@ -170,14 +170,23 @@ def build_leaderboard(start_date: str, end_date: str):
     return leaderboard.round(1)
 
 
-def color_rows_by_total(row):
-    total = row["Total"]
-    if total >= 200:
-        return ["background-color: lightgreen"] * len(row)
-    elif total >= 100:
-        return ["background-color: lightyellow"] * len(row)
-    else:
-        return ["background-color: lightcoral"] * len(row)
+def color_cells_by_threshold(row):
+    act_type = row.name[1]   # (Athlete, Type)
+    threshold = thresholds.get(act_type, 0)
+
+    styles = []
+    for col in row.index:
+        if col in ["Total", "Days ≥ Threshold"]:
+            styles.append("")  # don’t color summary columns
+        else:
+            val = row[col]
+            if val >= threshold:
+                styles.append("background-color: lightgreen")   # hit target
+            elif val > 0:
+                styles.append("background-color: lightyellow")  # some activity but below threshold
+            else:
+                styles.append("background-color: lightcoral")   # no activity
+    return styles
 
 
 # ==============================
@@ -240,7 +249,7 @@ if __name__ == "__main__":
         <body>
             <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
         """)    
-        f.write(leaderboard.style.apply(color_rows_by_total, axis=1).format("{:.1f}").to_html(escape=False))
+        f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format("{:.1f}").to_html(escape=False))
         f.write("""
         <a href="https://www.strava.com" target="_blank">
         <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
