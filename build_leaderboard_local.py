@@ -123,24 +123,24 @@ def build_leaderboard(start_date: str, end_date: str):
     if end_dt > today:
         end_dt = today
 
-    # Format date labels for columns
-    date_fmt = "%d/%m/%y" if start_dt.year != end_dt.year else "%d/%m"
-    days = [(start_dt + timedelta(days=i)).strftime(date_fmt)
-            for i in range((end_dt - start_dt).days + 1)]
-
     valid_types = {"Ride", "Run", "Walk"}
     exclude_types = {"VirtualRide", "EBikeRide"}
 
-    # MultiIndex for rows: Athlete x Activity Type
-    index = pd.MultiIndex.from_product(
-        [[a["name"] for a in athletes], sorted(valid_types)],
-        names=["Athlete", "Type"]
-    )
+    # Generate all day labels for the period
+    all_dates = [start_dt + timedelta(days=i) for i in range((end_dt - start_dt).days + 1)]
+    day_labels = [(d.strftime("%b-%Y"), d.strftime("%d")) for d in all_dates]  # Month, Day tuples
 
-    # Columns: daily dates + summary
+    # MultiIndex columns: Month → Day
+    columns = pd.MultiIndex.from_tuples(day_labels, names=["Month", "Day"])
+
+    # Add summary columns (single level, not part of MultiIndex)
     summary_cols = ["Total", "Active_Days"]
-    columns = pd.Index(days + summary_cols)
-    leaderboard = pd.DataFrame(0.0, index=index, columns=columns)
+    leaderboard = pd.DataFrame(0.0,
+                               index=pd.MultiIndex.from_product(
+                                   [[a["name"] for a in athletes], sorted(valid_types)],
+                                   names=["Athlete", "Type"]
+                               ),
+                               columns=columns)
 
     # Fill distances
     for athlete in athletes:
@@ -156,24 +156,29 @@ def build_leaderboard(start_date: str, end_date: str):
             if act_type in valid_types and act_type not in exclude_types:
                 act_date = datetime.strptime(act["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
                 if start_dt <= act_date <= end_dt:
-                    col = act_date.strftime(date_fmt)
-                    distance_km = act["distance"] / 1000.0
-                    leaderboard.loc[(athlete["name"], act_type), col] += distance_km
+                    col = (act_date.strftime("%b-%Y"), act_date.strftime("%d"))
+                    if col in leaderboard.columns:
+                        distance_km = act["distance"] / 1000.0
+                        leaderboard.loc[(athlete["name"], act_type), col] += distance_km
 
-    # Add totals
-    leaderboard["Total"] = leaderboard[days].sum(axis=1)
+    # Add summary columns
+    leaderboard["Total"] = leaderboard.sum(axis=1)
 
-    # Add Active_Days (count of days above threshold)
+    # Active_Days: count of days above threshold per activity type
     active_days = []
     for (athlete, act_type), row in leaderboard.iterrows():
         threshold = THRESHOLDS.get(act_type, 0)
-        days_count = sum(1 for col in days if row[col] >= threshold)
+        days_count = sum(1 for col in leaderboard.columns if isinstance(col, tuple) and row[col] >= threshold)
         active_days.append(days_count)
 
     leaderboard["Active_Days"] = active_days
     leaderboard = leaderboard.round(1)
-    return leaderboard
 
+    # Combine MultiIndex columns + summary columns into final DataFrame
+    final_cols = leaderboard.columns.tolist() + summary_cols
+    leaderboard = leaderboard.reindex(columns=list(columns) + summary_cols)
+
+    return leaderboard
 
 # ==============================
 # 4b. Cell Coloring Function
