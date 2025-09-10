@@ -172,6 +172,12 @@ def build_leaderboard(start_date: str, end_date: str):
 
 def color_cells_by_threshold(row):
     act_type = row.name[1]   # (Athlete, Type)
+    # Thresholds (in km)
+    thresholds = {
+        "Ride": 15,
+        "Run": 5,
+        "Walk": 5
+    }
     threshold = thresholds.get(act_type, 0)
 
     styles = []
