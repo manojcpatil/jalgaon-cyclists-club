@@ -279,7 +279,6 @@ if __name__ == "__main__":
          alt="Powered by Strava" 
          height="40">
         </a>
-        <h1>🚴 Powered by Strava</h1>
         </body>
         </html>
         """)
