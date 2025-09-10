@@ -184,11 +184,9 @@ def color_cells_by_threshold(row):
         if col in SUMMARY_COLS:
             styles.append("")  # skip styling
         else:
-            val = row[col]
-            if val == 0:
-                row[col] = ""   # blank out the cell value
+            if row[col] = "":
                 styles.append("background-color: white")
-            elif val >= threshold:
+            elif row[col] >= threshold:
                 styles.append("background-color: lightgreen")
             else:
                 styles.append("background-color: lightyellow")
