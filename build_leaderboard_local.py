@@ -184,7 +184,7 @@ def color_cells_by_threshold(row):
             elif val > 0:
                 styles.append("background-color: lightyellow")  # some activity
             else:
-                styles.append("background-color: lightcoral")   # no activity
+                styles.append("background-color: white")   # no activity
     return styles
 
 
