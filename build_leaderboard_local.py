@@ -97,10 +97,6 @@ def fetch_activities(access_token, start_date, end_date):
 
     return activities
 
-
-# ==============================
-# 4. Build Leaderboard
-# ==============================
 # ==============================
 # 4. Build Leaderboard (multi-type + totals + streaks)
 # ==============================
