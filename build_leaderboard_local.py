@@ -98,8 +98,16 @@ def fetch_activities(access_token, start_date, end_date):
     return activities
 
 # ==============================
-# 4. Build Leaderboard (multi-type + totals + streaks)
+# 4. Build Leaderboard (multi-type + totals + active days)
 # ==============================
+THRESHOLDS = {
+    "Ride": 15,
+    "Run": 5,
+    "Walk": 5
+}
+
+SUMMARY_COLS = ["Total", "Active_Days"]
+
 def build_leaderboard(start_date: str, end_date: str):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
     end_dt   = datetime.strptime(end_date, "%Y-%m-%d")
@@ -109,26 +117,14 @@ def build_leaderboard(start_date: str, end_date: str):
         end_dt = today
 
     # Format date labels
-    if start_dt.year != end_dt.year:
-        date_fmt = "%d/%m/%y"
-    else:
-        date_fmt = "%d/%m"
-
+    date_fmt = "%d/%m/%y" if start_dt.year != end_dt.year else "%d/%m"
     days = [
         (start_dt + timedelta(days=i)).strftime(date_fmt)
         for i in range((end_dt - start_dt).days + 1)
     ]
 
-    # Activity type filters
     valid_types   = {"Ride", "Run", "Walk"}
     exclude_types = {"VirtualRide", "EBikeRide"}
-
-    # Thresholds (in km)
-    thresholds = {
-        "Ride": 15,
-        "Run": 5,
-        "Walk": 5
-    }
 
     # MultiIndex = Athlete + Activity type
     index = pd.MultiIndex.from_product(
@@ -158,38 +154,35 @@ def build_leaderboard(start_date: str, end_date: str):
     # Add totals
     leaderboard["Total"] = leaderboard.sum(axis=1)
 
-    # Add "Days ≥ Threshold"
-    above_threshold = []
+    # Add "Active_Days" (count of days above threshold)
+    active_days = []
     for (athlete, act_type), row in leaderboard.iterrows():
-        threshold = thresholds.get(act_type, 0)
+        threshold = THRESHOLDS.get(act_type, 0)
         days_count = sum(1 for col in days if row[col] >= threshold)
-        above_threshold.append(days_count)
+        active_days.append(days_count)
 
-    leaderboard["Active_Days"] = above_threshold
+    leaderboard["Active_Days"] = active_days
 
     return leaderboard.round(1)
 
 
+# ==============================
+# 4b. Cell Coloring Function
+# ==============================
 def color_cells_by_threshold(row):
     act_type = row.name[1]   # (Athlete, Type)
-    # Thresholds (in km)
-    thresholds = {
-        "Ride": 15,
-        "Run": 5,
-        "Walk": 5
-    }
-    threshold = thresholds.get(act_type, 0)
+    threshold = THRESHOLDS.get(act_type, 0)
 
     styles = []
     for col in row.index:
-        if col in ["Total", "Days ≥ Threshold"]:
-            styles.append("")  # don’t color summary columns
+        if col in SUMMARY_COLS:
+            styles.append("")  # no style for summary columns
         else:
             val = row[col]
             if val >= threshold:
-                styles.append("background-color: lightgreen")   # hit target
+                styles.append("background-color: lightgreen")   # met threshold
             elif val > 0:
-                styles.append("background-color: lightyellow")  # some activity but below threshold
+                styles.append("background-color: lightyellow")  # some activity
             else:
                 styles.append("background-color: lightcoral")   # no activity
     return styles
