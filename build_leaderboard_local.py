@@ -140,15 +140,15 @@ def build_leaderboard(start_date: str, end_date: str):
         names=["Athlete", "Type"]
     )
     # Example: generate tuples (month, day)
-    month_day = [
-        ( (start_dt + timedelta(days=i)).strftime("%b-%Y"),   # month-year label
-          (start_dt + timedelta(days=i)).strftime("%d")       # day of month
-        )
-    for i in range((end_dt - start_dt).days + 1)
-    ]
+    month = act_date.strftime("%b-%Y")   # month-year label
+    day   = act_date.strftime("%d")      # day of month
+    col = (month, day)                   # tuple key for MultiIndex
+    
+    distance_km = act["distance"] / 1000.0
+    leaderboard.loc[(athlete["name"], act_type), col] += distance_km
 
     # Create MultiIndex for columns
-    columns = pd.MultiIndex.from_tuples(month_day, names=["Month", "Day"])
+    columns = pd.MultiIndex.from_tuples(col, names=["Month", "Day"])
 
     # Add your summary columns (single level, no multiindex)
     summary_cols = pd.Index(["Total", "Active_Days"], name="Summary")
