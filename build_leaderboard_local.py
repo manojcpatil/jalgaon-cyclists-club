@@ -162,14 +162,15 @@ def build_leaderboard(start_date: str, end_date: str):
         active_days.append(days_count)
 
     leaderboard["Active_Days"] = active_days
+    # replace 0.0 with empty string, but keep summary columns untouched
+    for col in leaderboard.columns:
+        if col not in ["Total", "Active_Days"]:
+            leaderboard.loc[leaderboard[col] == 0, col] = ""
 
     return leaderboard.round(1)
 
 
-# replace 0.0 with empty string, but keep summary columns untouched
-for col in leaderboard.columns:
-    if col not in ["Total", "Active_Days"]:
-        leaderboard.loc[leaderboard[col] == 0, col] = ""
+
 
 # ==============================
 # 4b. Cell Coloring Function
