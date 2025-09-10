@@ -101,6 +101,9 @@ def fetch_activities(access_token, start_date, end_date):
 # ==============================
 # 4. Build Leaderboard
 # ==============================
+# ==============================
+# 4. Build Leaderboard (multi-type + totals + streaks)
+# ==============================
 def build_leaderboard(start_date: str, end_date: str):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
     end_dt   = datetime.strptime(end_date, "%Y-%m-%d")
@@ -109,6 +112,7 @@ def build_leaderboard(start_date: str, end_date: str):
     if end_dt > today:
         end_dt = today
 
+    # Format date labels
     if start_dt.year != end_dt.year:
         date_fmt = "%d/%m/%y"
     else:
@@ -119,8 +123,25 @@ def build_leaderboard(start_date: str, end_date: str):
         for i in range((end_dt - start_dt).days + 1)
     ]
 
-    leaderboard = pd.DataFrame(0.0, index=[a["name"] for a in athletes], columns=days)
+    # Activity type filters
+    valid_types   = {"Ride", "Run", "Walk"}
+    exclude_types = {"VirtualRide", "EBikeRide"}
 
+    # Thresholds for streaks (in km)
+    streak_thresholds = {
+        "Ride": 15,
+        "Run": 10,
+        "Walk": 5
+    }
+
+    # MultiIndex = Athlete + Activity type
+    index = pd.MultiIndex.from_product(
+        [[a["name"] for a in athletes], sorted(valid_types)],
+        names=["Athlete", "Type"]
+    )
+    leaderboard = pd.DataFrame(0.0, index=index, columns=days)
+
+    # Fill distances
     for athlete in athletes:
         print(f"➡ Fetching {athlete['name']}")
         access_token = get_access_token(athlete["refresh_token"])
@@ -130,14 +151,34 @@ def build_leaderboard(start_date: str, end_date: str):
 
         activities = fetch_activities(access_token, start_dt, end_dt)
         for act in activities:
-            if act.get("type") == "Ride":
+            act_type = act.get("type")
+            if act_type in valid_types and act_type not in exclude_types:
                 act_date = datetime.strptime(act["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
                 if start_dt <= act_date <= end_dt:
                     col = act_date.strftime(date_fmt)
                     distance_km = act["distance"] / 1000.0
-                    leaderboard.loc[athlete["name"], col] += distance_km
+                    leaderboard.loc[(athlete["name"], act_type), col] += distance_km
 
+    # Add totals
     leaderboard["Total"] = leaderboard.sum(axis=1)
+
+    # Add streaks column
+    streaks = []
+    for (athlete, act_type), row in leaderboard.iterrows():
+        threshold = streak_thresholds.get(act_type, 0)
+        streak = 0
+        max_streak = 0
+
+        for col in days:
+            if row[col] >= threshold:
+                streak += 1
+                max_streak = max(max_streak, streak)
+            else:
+                streak = 0
+        streaks.append(max_streak)
+
+    leaderboard["Streak"] = streaks
+
     return leaderboard.round(1)
 
 
