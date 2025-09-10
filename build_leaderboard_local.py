@@ -175,8 +175,8 @@ def build_leaderboard(start_date: str, end_date: str):
     leaderboard = leaderboard.round(1)
 
     # Combine MultiIndex columns + summary columns into final DataFrame
-    final_cols = leaderboard.columns.tolist() + summary_cols
-    leaderboard = leaderboard.reindex(columns=list(columns) + summary_cols)
+    # final_cols = leaderboard.columns.tolist() + summary_cols
+    # leaderboard = leaderboard.reindex(columns=list(columns) + summary_cols)
 
     return leaderboard
 
