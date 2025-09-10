@@ -41,6 +41,14 @@ athletes = [
 ]
 
 
+def blank_zero(v):
+    try:
+        if float(v) == 0:
+            return ""   # render blank
+        return f"{v:.1f}"   # render with 1 decimal place
+    except:
+        return v
+
 # ==============================
 # 2. Strava Token Exchange
 # ==============================
@@ -163,14 +171,7 @@ def build_leaderboard(start_date: str, end_date: str):
 
     leaderboard["Active_Days"] = active_days
     leaderboard=leaderboard.round(1)
-    # replace 0.0 with empty string, but keep summary columns untouched
-    for col in leaderboard.columns:
-        if col not in ["Total", "Active_Days"]:
-            leaderboard.loc[leaderboard[col] == 0, col] = ""
-
-    return leaderboard.round(1)
-
-
+    return leaderboard
 
 
 # ==============================
@@ -254,7 +255,7 @@ if __name__ == "__main__":
         <body>
             <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
         """)    
-        f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format("{:.1f}").to_html(escape=False))
+        f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format(blank_zero).to_html(escape=False))
         f.write("""
         <a href="https://www.strava.com" target="_blank">
         <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
