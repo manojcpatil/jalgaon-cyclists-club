@@ -123,8 +123,8 @@ def build_leaderboard(start_date: str, end_date: str):
     valid_types   = {"Ride", "Run", "Walk"}
     exclude_types = {"VirtualRide", "EBikeRide"}
 
-    # Thresholds for streaks (in km)
-    streak_thresholds = {
+    # Thresholds (in km)
+    thresholds = {
         "Ride": 15,
         "Run": 10,
         "Walk": 5
