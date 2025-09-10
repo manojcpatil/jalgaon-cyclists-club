@@ -166,25 +166,31 @@ def build_leaderboard(start_date: str, end_date: str):
     return leaderboard.round(1)
 
 
+# replace 0.0 with empty string, but keep summary columns untouched
+for col in leaderboard.columns:
+    if col not in ["Total", "Active_Days"]:
+        leaderboard.loc[leaderboard[col] == 0, col] = ""
+
 # ==============================
 # 4b. Cell Coloring Function
 # ==============================
 def color_cells_by_threshold(row):
-    act_type = row.name[1]   # (Athlete, Type)
+    act_type = row.name[1]
     threshold = THRESHOLDS.get(act_type, 0)
 
     styles = []
     for col in row.index:
         if col in SUMMARY_COLS:
-            styles.append("")  # no style for summary columns
+            styles.append("")  # skip styling
         else:
             val = row[col]
-            if val >= threshold:
-                styles.append("background-color: lightgreen")   # met threshold
-            elif val > 0:
-                styles.append("background-color: lightyellow")  # some activity
+            if val == 0:
+                row[col] = ""   # blank out the cell value
+                styles.append("background-color: white")
+            elif val >= threshold:
+                styles.append("background-color: lightgreen")
             else:
-                styles.append("background-color: white")   # no activity
+                styles.append("background-color: lightyellow")
     return styles
 
 
