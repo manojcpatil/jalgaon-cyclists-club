@@ -44,7 +44,7 @@ athletes = [
 def blank_zero(v):
     try:
         if float(v) == 0:
-            return ""   # render blank
+            return "--"   # render blank
         return f"{v:.1f}"   # render with 1 decimal place
     except:
         return v
