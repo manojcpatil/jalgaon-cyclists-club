@@ -139,7 +139,25 @@ def build_leaderboard(start_date: str, end_date: str):
         [[a["name"] for a in athletes], sorted(valid_types)],
         names=["Athlete", "Type"]
     )
-    leaderboard = pd.DataFrame(0.0, index=index, columns=days)
+    # Example: generate tuples (month, day)
+    month_day = [
+        ( (start_dt + timedelta(days=i)).strftime("%b-%Y"),   # month-year label
+          (start_dt + timedelta(days=i)).strftime("%d")       # day of month
+        )
+    for i in range((end_dt - start_dt).days + 1)
+    ]
+
+    # Create MultiIndex for columns
+    columns = pd.MultiIndex.from_tuples(month_day, names=["Month", "Day"])
+
+    # Add your summary columns (single level, no multiindex)
+    summary_cols = pd.Index(["Total", "Active_Days"], name="Summary")
+
+    # Final columns = [ (month, day)... ] + summary
+    all_columns = columns.append(summary_cols)
+
+    # Create DataFrame
+    leaderboard = pd.DataFrame(0.0, index=index, columns=all_columns)
 
     # Fill distances
     for athlete in athletes:
