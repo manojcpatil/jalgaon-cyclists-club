@@ -214,7 +214,7 @@ if __name__ == "__main__":
         f.write(leaderboard.style.apply(color_rows_by_total, axis=1).format("{:.1f}").to_html(escape=False))
         f.write("""
         <a href="https://www.strava.com" target="_blank">
-        <img src="https://developers.strava.com/assets/api_logo_pwrdBy_strava_horiz_orange.png" 
+        <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
          alt="Powered by Strava" 
          height="40">
         </a>
