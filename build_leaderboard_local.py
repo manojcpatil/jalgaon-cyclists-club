@@ -208,11 +208,11 @@ if __name__ == "__main__":
         f.write(leaderboard.to_markdown())
 
     # Prepare formatters: daily columns -> blank_zero, totals -> one decimal, Active_Days -> integer
-    daily_cols = [c for c in leaderboard.columns if c not in SUMMARY_COLS]
+    daily_cols = [c for c in leaderboard.columns if c not in SUMMARY_COLS]+["Total"]
 
     formatters = {col: blank_zero for col in daily_cols}
     # keep Total numeric with 1 decimal
-    formatters["Total"] = lambda v: "" if pd.isna(v) else f"{v:.1f}"
+    # formatters["Total"] = lambda v: "" if pd.isna(v) else f"{v:.1f}"
     # Active_Days as integer (no decimals)
     formatters["Active_Days"] = lambda v: "" if pd.isna(v) else f"{int(v)}"
 
