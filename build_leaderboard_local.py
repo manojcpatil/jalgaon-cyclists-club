@@ -118,46 +118,29 @@ SUMMARY_COLS = ["Active_Days"]
 
 def build_leaderboard(start_date: str, end_date: str):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-    end_dt   = datetime.strptime(end_date, "%Y-%m-%d")
-
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
     today = datetime.today()
     if end_dt > today:
         end_dt = today
 
-    # Format date labels
+    # Format date labels for columns
     date_fmt = "%d/%m/%y" if start_dt.year != end_dt.year else "%d/%m"
-    days = [
-        (start_dt + timedelta(days=i)).strftime(date_fmt)
-        for i in range((end_dt - start_dt).days + 1)
-    ]
+    days = [(start_dt + timedelta(days=i)).strftime(date_fmt)
+            for i in range((end_dt - start_dt).days + 1)]
 
-    valid_types   = {"Ride", "Run", "Walk"}
+    valid_types = {"Ride", "Run", "Walk"}
     exclude_types = {"VirtualRide", "EBikeRide"}
 
-    # MultiIndex = Athlete + Activity type
+    # MultiIndex for rows: Athlete x Activity Type
     index = pd.MultiIndex.from_product(
         [[a["name"] for a in athletes], sorted(valid_types)],
         names=["Athlete", "Type"]
     )
-    # Example: generate tuples (month, day)
-    month = act_date.strftime("%b-%Y")   # month-year label
-    day   = act_date.strftime("%d")      # day of month
-    col = (month, day)                   # tuple key for MultiIndex
-    
-    distance_km = act["distance"] / 1000.0
-    leaderboard.loc[(athlete["name"], act_type), col] += distance_km
 
-    # Create MultiIndex for columns
-    columns = pd.MultiIndex.from_tuples(col, names=["Month", "Day"])
-
-    # Add your summary columns (single level, no multiindex)
-    summary_cols = pd.Index(["Total", "Active_Days"], name="Summary")
-
-    # Final columns = [ (month, day)... ] + summary
-    all_columns = columns.append(summary_cols)
-
-    # Create DataFrame
-    leaderboard = pd.DataFrame(0.0, index=index, columns=all_columns)
+    # Columns: daily dates + summary
+    summary_cols = ["Total", "Active_Days"]
+    columns = pd.Index(days + summary_cols)
+    leaderboard = pd.DataFrame(0.0, index=index, columns=columns)
 
     # Fill distances
     for athlete in athletes:
@@ -178,9 +161,9 @@ def build_leaderboard(start_date: str, end_date: str):
                     leaderboard.loc[(athlete["name"], act_type), col] += distance_km
 
     # Add totals
-    leaderboard["Total"] = leaderboard.sum(axis=1)
+    leaderboard["Total"] = leaderboard[days].sum(axis=1)
 
-    # Add "Active_Days" (count of days above threshold)
+    # Add Active_Days (count of days above threshold)
     active_days = []
     for (athlete, act_type), row in leaderboard.iterrows():
         threshold = THRESHOLDS.get(act_type, 0)
@@ -188,7 +171,7 @@ def build_leaderboard(start_date: str, end_date: str):
         active_days.append(days_count)
 
     leaderboard["Active_Days"] = active_days
-    leaderboard=leaderboard.round(1)
+    leaderboard = leaderboard.round(1)
     return leaderboard
 
 
