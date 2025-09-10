@@ -114,7 +114,7 @@ THRESHOLDS = {
     "Walk": 5
 }
 
-SUMMARY_COLS = ["Total", "Active_Days"]
+SUMMARY_COLS = ["Active_Days"]
 
 def build_leaderboard(start_date: str, end_date: str):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
