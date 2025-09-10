@@ -158,22 +158,14 @@ def build_leaderboard(start_date: str, end_date: str):
     # Add totals
     leaderboard["Total"] = leaderboard.sum(axis=1)
 
-    # Add streaks column
-    streaks = []
+    # Add "Days ≥ Threshold"
+    above_threshold = []
     for (athlete, act_type), row in leaderboard.iterrows():
-        threshold = streak_thresholds.get(act_type, 0)
-        streak = 0
-        max_streak = 0
+        threshold = thresholds.get(act_type, 0)
+        days_count = sum(1 for col in days if row[col] >= threshold)
+        above_threshold.append(days_count)
 
-        for col in days:
-            if row[col] >= threshold:
-                streak += 1
-                max_streak = max(max_streak, streak)
-            else:
-                streak = 0
-        streaks.append(max_streak)
-
-    leaderboard["Streak"] = streaks
+    leaderboard["Active_Days"] = above_threshold
 
     return leaderboard.round(1)
 
