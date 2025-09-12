@@ -180,7 +180,7 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
 
             # Sort by Start_Date for readability
             if not df.empty:
-                df["Start_Date"] = pd.to_datetime(df["Start_Date"])
+                df["Start_Date"] = pd.to_datetime(df["Start_Date"], utc=True).dt.tz_localize(None)
                 df = df.sort_values(by="Start_Date")
                 # Format numeric columns
                 df["Distance_km"] = df["Distance_km"].round(2)
