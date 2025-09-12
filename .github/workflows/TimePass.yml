@@ -24,7 +24,7 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests gspread oauth2client pandas tabulate jinja2
+          pip install requests gspread oauth2client pandas tabulate jinja2 openpyxl
 
       - name: 🔑 Run TimePass script
         env:
