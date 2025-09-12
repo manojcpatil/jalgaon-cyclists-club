@@ -184,11 +184,14 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
                 df = df.sort_values(by="Start_Date")
                 # Format numeric columns
                 df["Distance_km"] = df["Distance_km"].round(2)
+
                 for col in ["Moving_Time_s", "Elapsed_Time_s", "Total_Elevation_Gain_m",
                             "Average_Speed_mps", "Max_Speed_mps", "Average_Cadence",
                             "Average_Watts", "Max_Watts", "Calories", "Average_Heart_Rate",
                             "Max_Heart_Rate"]:
-                    df[col] = df[col].round(2).fillna("")
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors="coerce")  # convert or NaN
+                        df[col] = df[col].round(2).fillna("")
 
             # Write to Excel sheet named after the athlete
             sheet_name = athlete["name"][:31]  # Excel sheet names have a 31-char limit
