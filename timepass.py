@@ -105,98 +105,100 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
     if end_dt > today:
         end_dt = today
 
-    # Authenticate and get athlete list
     athletes = authenticate_google_sheets()
 
-    # Create Excel writer
-    with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-        for athlete in athletes:
-            print(f"➡ Fetching data for {athlete['name']}")
-            access_token = get_access_token(athlete["refresh_token"])
-            if not access_token:
-                print(f"⚠ Skipping {athlete['name']} (no access token)")
-                continue
+    all_data = []  # collect across athletes
 
-            # Fetch all activities for the athlete
-            activities = fetch_activities(access_token, start_dt, end_dt)
+    for athlete in athletes:
+        print(f"➡ Fetching data for {athlete['name']}")
+        access_token = get_access_token(athlete["refresh_token"])
+        if not access_token:
+            print(f"⚠ Skipping {athlete['name']} (no access token)")
+            continue
 
-            # Prepare data for the athlete
-            if not activities:
-                print(f"⚠ No activities found for {athlete['name']}")
-                continue
+        activities = fetch_activities(access_token, start_dt, end_dt)
+        if not activities:
+            print(f"⚠ No activities found for {athlete['name']}")
+            continue
 
-            # Extract all fields from activities
-            activity_data = []
-            for act in activities:
-                # Convert activity to a flat dictionary with all available fields
-                activity_dict = {
-                    "Activity_ID": act.get("id"),
-                    "Name": act.get("name"),
-                    "Type": act.get("type"),
-                    "Start_Date": act.get("start_date_local"),
-                    "Distance_m": act.get("distance"),
-                    "Distance_km": act.get("distance", 0) / 1000.0 if act.get("distance") else 0.0,
-                    "Moving_Time_s": act.get("moving_time"),
-                    "Elapsed_Time_s": act.get("elapsed_time"),
-                    "Total_Elevation_Gain_m": act.get("total_elevation_gain"),
-                    "Average_Speed_mps": act.get("average_speed"),
-                    "Max_Speed_mps": act.get("max_speed"),
-                    "Average_Cadence": act.get("average_cadence"),
-                    "Average_Watts": act.get("average_watts"),
-                    "Max_Watts": act.get("max_watts"),
-                    "Calories": act.get("calories"),
-                    "Start_Latitude": act.get("start_latitude"),
-                    "Start_Longitude": act.get("start_longitude"),
-                    "End_Latitude": act.get("end_latitude"),
-                    "End_Longitude": act.get("end_longitude"),
-                    "Achievement_Count": act.get("achievement_count"),
-                    "Kudos_Count": act.get("kudos_count"),
-                    "Comment_Count": act.get("comment_count"),
-                    "Athlete_Count": act.get("athlete_count"),
-                    "Map_ID": act.get("map", {}).get("id"),
-                    "Gear_ID": act.get("gear_id"),
-                    "Has_Heart_Rate": act.get("has_heartrate"),
-                    "Average_Heart_Rate": act.get("average_heartrate"),
-                    "Max_Heart_Rate": act.get("max_heartrate"),
-                    "Device_Name": act.get("device_name"),
-                    "Workout_Type": act.get("workout_type"),
-                    "External_ID": act.get("external_id"),
-                    "Manual": act.get("manual"),
-                    "Private": act.get("private"),
-                    "Visibility": act.get("visibility"),
-                    "Description": act.get("description"),
-                    "Trainer": act.get("trainer"),
-                    "Commute": act.get("commute"),
-                    "Flagged": act.get("flagged"),
-                    "Start_Date_UTC": act.get("start_date"),
-                    "Timezone": act.get("timezone"),
-                    "Total_Photo_Count": act.get("total_photo_count"),
-                    "PR_Count": act.get("pr_count"),
-                }
-                activity_data.append(activity_dict)
+        activity_data = []
+        for act in activities:
+            activity_dict = {
+                "Activity_ID": act.get("id"),
+                "Name": act.get("name"),
+                "Type": act.get("type"),
+                "Start_Date": act.get("start_date_local"),
+                "Distance_m": act.get("distance"),
+                "Distance_km": act.get("distance", 0) / 1000.0 if act.get("distance") else 0.0,
+                "Moving_Time_s": act.get("moving_time"),
+                "Elapsed_Time_s": act.get("elapsed_time"),
+                "Total_Elevation_Gain_m": act.get("total_elevation_gain"),
+                "Average_Speed_mps": act.get("average_speed"),
+                "Max_Speed_mps": act.get("max_speed"),
+                "Average_Cadence": act.get("average_cadence"),
+                "Average_Watts": act.get("average_watts"),
+                "Max_Watts": act.get("max_watts"),
+                "Calories": act.get("calories"),
+                "Start_Latitude": act.get("start_latitude"),
+                "Start_Longitude": act.get("start_longitude"),
+                "End_Latitude": act.get("end_latitude"),
+                "End_Longitude": act.get("end_longitude"),
+                "Achievement_Count": act.get("achievement_count"),
+                "Kudos_Count": act.get("kudos_count"),
+                "Comment_Count": act.get("comment_count"),
+                "Athlete_Count": act.get("athlete_count"),
+                "Map_ID": act.get("map", {}).get("id"),
+                "Gear_ID": act.get("gear_id"),
+                "Has_Heart_Rate": act.get("has_heartrate"),
+                "Average_Heart_Rate": act.get("average_heartrate"),
+                "Max_Heart_Rate": act.get("max_heartrate"),
+                "Device_Name": act.get("device_name"),
+                "Workout_Type": act.get("workout_type"),
+                "External_ID": act.get("external_id"),
+                "Manual": act.get("manual"),
+                "Private": act.get("private"),
+                "Visibility": act.get("visibility"),
+                "Description": act.get("description"),
+                "Trainer": act.get("trainer"),
+                "Commute": act.get("commute"),
+                "Flagged": act.get("flagged"),
+                "Start_Date_UTC": act.get("start_date"),
+                "Timezone": act.get("timezone"),
+                "Total_Photo_Count": act.get("total_photo_count"),
+                "PR_Count": act.get("pr_count"),
+            }
+            activity_data.append(activity_dict)
 
-            # Convert to DataFrame
-            df = pd.DataFrame(activity_data)
+        df = pd.DataFrame(activity_data)
 
-            # Sort by Start_Date for readability
-            if not df.empty:
-                df["Start_Date"] = pd.to_datetime(df["Start_Date"], utc=True).dt.tz_localize(None)
-                df = df.sort_values(by="Start_Date")
-                # Format numeric columns
-                df["Distance_km"] = df["Distance_km"].round(2)
+        if not df.empty:
+            # Clean datetimes
+            for col in ["Start_Date", "Start_Date_UTC"]:
+                if col in df.columns:
+                    df[col] = pd.to_datetime(df[col], errors="coerce", utc=True).dt.tz_localize(None)
 
-                for col in ["Moving_Time_s", "Elapsed_Time_s", "Total_Elevation_Gain_m",
-                            "Average_Speed_mps", "Max_Speed_mps", "Average_Cadence",
-                            "Average_Watts", "Max_Watts", "Calories", "Average_Heart_Rate",
-                            "Max_Heart_Rate"]:
-                    if col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors="coerce")  # convert or NaN
-                        df[col] = df[col].round(2).fillna("")
+            # Format numeric columns
+            df["Distance_km"] = df["Distance_km"].round(2)
+            for col in ["Moving_Time_s", "Elapsed_Time_s", "Total_Elevation_Gain_m",
+                        "Average_Speed_mps", "Max_Speed_mps", "Average_Cadence",
+                        "Average_Watts", "Max_Watts", "Calories", "Average_Heart_Rate",
+                        "Max_Heart_Rate"]:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors="coerce").round(2)
 
-            # Write to Excel sheet named after the athlete
-            sheet_name = athlete["name"][:31]  # Excel sheet names have a 31-char limit
-            df.to_excel(writer, sheet_name=sheet_name, index=False)
+            # Add athlete ID + name
+            df.insert(0, "Athlete_Name", athlete["name"])
+            df.insert(0, "Athlete_ID", act.get("athlete", {}).get("id", None))
 
+            all_data.append(df)
+
+    # Combine everything
+    if all_data:
+        final_df = pd.concat(all_data, ignore_index=True)
+    else:
+        final_df = pd.DataFrame([{"Athlete_ID": None, "Athlete_Name": None, "Message": "No activities found"}])
+
+    final_df.to_excel(output_file, index=False)
     print(f"✅ Athlete data saved to {output_file}")
 
 
