@@ -96,7 +96,7 @@ def fetch_activities(access_token, start_date, end_date):
 
 
 # ==============================
-# 4. Extract All Athlete Data to Excel
+# 4. Extract All Athlete Data to Excel with Pivot
 # ==============================
 def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: str = "athlete_data.xlsx"):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
@@ -106,7 +106,6 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
         end_dt = today
 
     athletes = authenticate_google_sheets()
-
     all_data = []
 
     for athlete in athletes:
@@ -149,10 +148,12 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
         df = pd.DataFrame(activity_data)
 
         if not df.empty:
-            # Clean datetimes
+            # Clean datetimes and strip timezone
             for col in ["Start_Date", "Start_Date_UTC"]:
                 if col in df.columns:
                     df[col] = pd.to_datetime(df[col], errors="coerce")
+                    if pd.api.types.is_datetime64_any_dtype(df[col]):
+                        df[col] = df[col].dt.tz_localize(None)
 
             # Round numeric
             df["Distance_km"] = df["Distance_km"].round(2)
@@ -164,6 +165,13 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
         final_df = pd.concat(all_data, ignore_index=True)
     else:
         final_df = pd.DataFrame([{"Athlete_ID": None, "Athlete_Name": None, "Message": "No activities found"}])
+
+    # Fix datetime columns for Excel
+    for col in ["Start_Date", "Start_Date_UTC"]:
+        if col in final_df.columns:
+            final_df[col] = pd.to_datetime(final_df[col], errors="coerce")
+            if pd.api.types.is_datetime64_any_dtype(final_df[col]):
+                final_df[col] = final_df[col].dt.tz_localize(None)
 
     # Add Month and Day columns for pivoting
     if "Start_Date" in final_df.columns:
@@ -192,5 +200,4 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
 # 5. Main Execution
 # ==============================
 if __name__ == "__main__":
-    # Extract all athlete data to Excel for the specified date range
     extract_athlete_data_to_excel("2025-08-01", "2025-10-31", "athlete_data.xlsx")
