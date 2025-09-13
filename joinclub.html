@@ -2,43 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Strava OAuth Callback</title>
+  <title>Redirecting...</title>
 </head>
 <body>
-  <h2>Strava Authorization Successful ✅</h2>
-  <p id="message">Saving your code...</p>
+  <p id="message">Redirecting, please wait...</p>
 
   <script>
-    // Extract query params
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const scope = params.get("scope");
 
     if (code) {
-      document.getElementById("message").innerHTML = `
-        ✅ Got code: <b>${code}</b><br>
-        Scope: ${scope}<br>
-        Sending to Google Sheets...
-      `;
-
-      // 🔄 Send code to Google Apps Script Web App
+      // Send code + scope to Google Apps Script Web App
       fetch("https://script.google.com/macros/s/AKfycbz7qmnAW3Xb-5-YEhoGun4tMwUXrA9cyuvaEwH2D33IiDZJ_veKiG4xG1JQnginTgCu/exec", {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: code, scope: scope })
       })
-      .then(() => {
-        document.getElementById("message").innerHTML += "<br>✅ Saved to Google Sheets!";
-      })
-      .catch(err => {
-        document.getElementById("message").innerHTML += "<br>❌ Error: " + err;
+      .finally(() => {
+        // Always redirect after sending
+        window.location.href = "https://manojcpatil.github.io/jalgaon-cyclists-club/";
       });
-
     } else {
-      document.getElementById("message").innerHTML = "❌ No code found in URL.";
+      // No code found – just redirect anyway
+      window.location.href = "https://manojcpatil.github.io/jalgaon-cyclists-club/";
     }
   </script>
 </body>
 </html>
-
