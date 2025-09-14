@@ -209,7 +209,7 @@ def color_cells_by_threshold(row):
 # 5. Save Leaderboard
 # ==============================
 if __name__ == "__main__":
-    leaderboard = build_leaderboard("2025-08-15", "2025-10-31")
+    leaderboard = build_leaderboard("2025-08-14", "2025-10-31")
 
     leaderboard.to_csv("leaderboard.csv")
 
