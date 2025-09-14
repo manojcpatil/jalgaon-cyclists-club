@@ -191,6 +191,7 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
     # Save both sheets
     with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
         final_df.to_excel(writer, sheet_name="Raw_Data", index=False)
+        final_df.to_json("athlete_data.json", orient="records", date_format="iso")
         pivot_df.to_excel(writer, sheet_name="Pivot_Table")
 
     print(f"✅ Athlete data saved with pivot table to {output_file}")
