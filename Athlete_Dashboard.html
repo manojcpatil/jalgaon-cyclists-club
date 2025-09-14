@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Athlete Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f7f9fb; }
+    h2 { margin-bottom: 10px; }
+    .filters { margin-bottom: 20px; }
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    canvas { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; }
+    th, td { padding: 8px 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+  <h2>Strava Athlete Dashboard</h2>
+
+  <div class="filters">
+    <label for="athleteSelect">Athlete:</label>
+    <select id="athleteSelect"></select>
+
+    <label for="typeSelect">Activity Type:</label>
+    <select id="typeSelect"></select>
+  </div>
+
+  <div class="dashboard">
+    <canvas id="distanceChart"></canvas>
+    <canvas id="speedChart"></canvas>
+  </div>
+
+  <h3>Raw Data</h3>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Athlete</th>
+        <th>Type</th>
+        <th>Distance (km)</th>
+        <th>Average Speed (m/s)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let allData = [];
+    let distanceChart, speedChart;
+
+    async function loadData() {
+      const response = await fetch("athlete_data.json");
+      allData = await response.json();
+
+      const athletes = [...new Set(allData.map(d => d.Athlete_Name))];
+      const athleteSelect = document.getElementById("athleteSelect");
+      athletes.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        athleteSelect.appendChild(opt);
+      });
+
+      updateFilters();
+    }
+
+    function updateFilters() {
+      const athlete = document.getElementById("athleteSelect").value;
+      const filtered = allData.filter(d => d.Athlete_Name === athlete);
+
+      const types = [...new Set(filtered.map(d => d.Type))];
+      const typeSelect = document.getElementById("typeSelect");
+      typeSelect.innerHTML = "";
+      types.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        typeSelect.appendChild(opt);
+      });
+
+      updateDashboard();
+    }
+
+    function updateDashboard() {
+      const athlete = document.getElementById("athleteSelect").value;
+      const type = document.getElementById("typeSelect").value;
+
+      const filtered = allData.filter(d =>
+        d.Athlete_Name === athlete && d.Type === type
+      );
+
+      const labels = filtered.map(d => new Date(d.Start_Date).toLocaleDateString());
+      const distances = filtered.map(d => d.Distance_km);
+      const speeds = filtered.map(d => d.Average_Speed_mps);
+
+      // Distance chart
+      if (distanceChart) distanceChart.destroy();
+      distanceChart = new Chart(document.getElementById("distanceChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Distance (km)",
+            data: distances,
+            borderColor: "steelblue",
+            backgroundColor: "rgba(70,130,180,0.2)"
+          }]
+        }
+      });
+
+      // Speed chart
+      if (speedChart) speedChart.destroy();
+      speedChart = new Chart(document.getElementById("speedChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Avg Speed (m/s)",
+            data: speeds,
+            borderColor: "darkorange",
+            backgroundColor: "rgba(255,140,0,0.2)"
+          }]
+        }
+      });
+
+      // Table
+      const tbody = document.getElementById("dataTable").querySelector("tbody");
+      tbody.innerHTML = "";
+      filtered.forEach(d => {
+        const row = `<tr>
+          <td>${new Date(d.Start_Date).toLocaleDateString()}</td>
+          <td>${d.Athlete_Name}</td>
+          <td>${d.Type}</td>
+          <td>${d.Distance_km.toFixed(2)}</td>
+          <td>${d.Average_Speed_mps?.toFixed(2) || ""}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    document.getElementById("athleteSelect").addEventListener("change", updateFilters);
+    document.getElementById("typeSelect").addEventListener("change", updateDashboard);
+
+    loadData();
+  </script>
+</body>
+</html>
