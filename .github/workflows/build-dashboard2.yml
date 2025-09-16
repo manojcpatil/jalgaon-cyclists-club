@@ -1,6 +1,7 @@
 name: Build Dashboard
 on:
-  push:
+  schedule:
+    - cron: "0 2 * * *"   # ⏰ runs daily at 02:00 UTC
     paths:
       - 'athlete_data.json'
       - 'build_dashboard2.py'
