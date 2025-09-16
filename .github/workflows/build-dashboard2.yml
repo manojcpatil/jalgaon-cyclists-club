@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'athlete_data.json'
-      - 'build_dashboard.py'
+      - 'build_dashboard2.py'
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
       - name: Install deps
         run: pip install pandas plotly jinja2
       - name: Build dashboard
-        run: python build_dashboard.py --input athlete_data.json --output dashboard.html
+        run: python build_dashboard2.py --input athlete_data.json --output dashboard.html
       - name: Commit dashboard.html
         run: |
           git config user.name "github-actions[bot]"
