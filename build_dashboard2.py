@@ -267,8 +267,16 @@ def build_dashboard(input_path, output_path):
             plot_json[k] = pio.to_json(fig, validate=False)
 
     # Raw table HTML
-    display_cols = ["Activity_ID", "Athlete_Name", "Type", "Name", "Start_Date_str", "Distance_km", "Moving_Time_readable", "Total_Elevation_Gain_m", "Average_Speed_mps"]
-    raw_table_html = df[display_cols].sort_values("Start_Date_str", ascending=False).to_html(classes="display nowrap", table_id="raw_table", index=False, escape=False)
+    # display_cols = ["Activity_ID", "Athlete_Name", "Type", "Name", "Start_Date_str", "Distance_km", "Moving_Time_readable", "Total_Elevation_Gain_m", "Average_Speed_mps"]
+    # raw_table_html = df[display_cols].sort_values("Start_Date_str", ascending=False).to_html(classes="display nowrap", table_id="raw_table", index=False, escape=False)
+    # Raw table HTML
+    display_cols = ["Athlete_Name", "Type", "Distance_km", "Total_Elevation_Gain_m"]
+    raw_table_html = df[display_cols].to_html(
+        classes="display nowrap",
+        table_id="raw_table",
+        index=False,
+        escape=False
+    )
 
     # Pivot HTML
     pivot_table_html = pivot_df.to_html(classes="display", table_id="pivot_table", index=False, float_format="%.2f", escape=False)
