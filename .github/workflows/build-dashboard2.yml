@@ -4,7 +4,8 @@ on:
     paths:
       - 'athlete_data.json'
       - 'build_dashboard2.py'
-
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
