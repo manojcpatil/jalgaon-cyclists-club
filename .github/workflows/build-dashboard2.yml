@@ -1,10 +1,9 @@
 name: Build Dashboard
 on:
-  schedule:
-    - cron: "0 2 * * *"   # ⏰ runs daily at 02:00 UTC
+  push:
     paths:
       - 'athlete_data.json'
-      - 'build_dashboard2.py'
+      - 'build_dashboard.py'
 
 jobs:
   build:
@@ -18,12 +17,12 @@ jobs:
       - name: Install deps
         run: pip install pandas plotly jinja2
       - name: Build dashboard
-        run: python build_dashboard2.py --input athlete_data.json --output dashboard2.html
+        run: python build_dashboard.py --input athlete_data.json --output dashboard.html
       - name: Commit dashboard.html
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dashboard2.html
+          git add dashboard.html
           git commit -m "Auto-build dashboard (from athlete_data.json)" || echo "no changes to commit"
           git push
         env:
