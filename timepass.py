@@ -201,4 +201,4 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
 # 5. Main Execution
 # ==============================
 if __name__ == "__main__":
-    extract_athlete_data_to_excel("2025-08-15", "2025-10-31", "athlete_data.xlsx")
+    extract_athlete_data_to_excel("2025-09-15", "2025-10-31", "athlete_data.xlsx")
