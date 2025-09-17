@@ -33,7 +33,7 @@ jobs:
           GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
           SHEET_URL: ${{ secrets.SHEET_URL }}
         run: |
-          python build_leaderboard_local2.py
+          python bulid_leaderboard_local2.py
 
       - name: 💾 Commit updated leaderboard
         run: |
