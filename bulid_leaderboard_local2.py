@@ -169,7 +169,7 @@ def color_cells_by_threshold(row):
 # 7. Save Leaderboard (unchanged)
 # ==============================
 if __name__ == "__main__":
-    leaderboard = build_leaderboard("2025-08-14", "2025-10-31")
+    leaderboard = build_leaderboard("2025-09-15", "2025-10-31")
     leaderboard.to_csv("leaderboard.csv")
     with open("leaderboard.md", "w", encoding="utf-8") as f:
         f.write("# 🚴 Jalgaon Cyclist Club – Daily Leaderboard\n\n")
