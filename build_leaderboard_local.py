@@ -276,60 +276,19 @@ if __name__ == "__main__":
                 tr:hover {
                     background: #ffe9e0;
                 }
-                .search-container {
-                    margin: 20px auto;
-                    width: 80%;
-                    text-align: left;
-                }
-                input[type="text"] {
-                    padding: 10px;
-                    width: 100%;
-                    font-size: 16px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                }
-                .hidden {
-                    display: none;
-                }
             </style>
         </head>
         <body>
             <h1>🚴 Jalgaon Cyclist Club – Daily Leaderboard</h1>
-            <div class="search-container">
-                <input type="text" id="athleteSearch" placeholder="Search for an athlete..." onkeyup="filterAthletes()">
-            </div>
-        """)
+        """)    
+        # f.write(leaderboard.style.apply(color_cells_by_threshold, axis=1).format(blank_zero).to_html(escape=False))
         f.write(styled.to_html(escape=False))
         f.write("""
-            <a href="https://www.strava.com" target="_blank">
-                <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
-                    alt="Powered by Strava" 
-                    height="40">
-            </a>
-            <script>
-                function filterAthletes() {
-                    const input = document.getElementById('athleteSearch');
-                    const filter = input.value.toLowerCase();
-                    const table = document.querySelector('table');
-                    const rows = table.getElementsByTagName('tr');
-                    let currentAthlete = '';
-
-                    for (let i = 1; i < rows.length; i++) {
-                        const cells = rows[i].getElementsByTagName('td');
-                        if (cells.length > 0) {
-                            const athleteName = cells[0].textContent.toLowerCase();
-                            if (athleteName && athleteName !== currentAthlete) {
-                                currentAthlete = athleteName;
-                            }
-                            if (currentAthlete.includes(filter) || filter === '') {
-                                rows[i].classList.remove('hidden');
-                            } else {
-                                rows[i].classList.add('hidden');
-                            }
-                        }
-                    }
-                }
-            </script>
+        <a href="https://www.strava.com" target="_blank">
+        <img src="api_logo_pwrdBy_strava_horiz_orange.png" 
+         alt="Powered by Strava" 
+         height="40">
+        </a>
         </body>
         </html>
         """)
