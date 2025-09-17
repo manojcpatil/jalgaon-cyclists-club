@@ -184,7 +184,7 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
         values="Distance_km",
         index=["Athlete_Name", "Type"],
         columns=["Month", "Day"],
-        aggfunc="sum",
+        aggfunc="max",
         fill_value=0
     )
 
