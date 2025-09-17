@@ -117,8 +117,8 @@ THRESHOLDS = {
 SUMMARY_COLS = ["Total","Active_Days"]
 
 def build_leaderboard(start_date: str, end_date: str):
-    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+    start_dt = datetime.strptime(start_date + "-00-00-00", "%Y-%m-%d-%H-%M-%S")
+    end_dt = datetime.strptime(end_date + "-00-00-00", "%Y-%m-%d-%H-%M-%S")
     today = datetime.today()
     if end_dt > today:
         end_dt = today
