@@ -93,7 +93,7 @@
     // Fetch JSON data from GitHub
     async function fetchAthleteData() {
       try {
-        const response = await fetch('https://raw.githubusercontent.com/manojcpatil/jalgaon-cyclists-club/main/athlete_data.json');
+        const response = await fetch('https://manojcpatil.github.io/jalgaon-cyclists-club/athlete_data.json');
         const data = await response.json();
         renderLeaderboard(data);
       } catch (error) {
