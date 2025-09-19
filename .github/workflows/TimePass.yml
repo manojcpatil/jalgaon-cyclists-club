@@ -39,6 +39,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add athlete_data.xlsx athlete_data.json leaderboard.html
+          git add athlete_data.xlsx athlete_data.json leaderboard.html activities.sql
           git commit -m "🔄 Update athlete_data [skip ci]" || echo "No changes"
           git push
