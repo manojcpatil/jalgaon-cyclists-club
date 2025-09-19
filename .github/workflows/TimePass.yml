@@ -33,12 +33,12 @@ jobs:
           GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
           SHEET_URL: ${{ secrets.SHEET_URL }}
         run: |
-          python timepass.py
+          python build_leaderboard_local.py
 
       - name: 💾 Commit updated timepass
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add athlete_data.xlsx athlete_data.json
+          git add athlete_data.xlsx athlete_data.json leaderboard.html
           git commit -m "🔄 Update athlete_data [skip ci]" || echo "No changes"
           git push
