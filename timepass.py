@@ -5,7 +5,8 @@ import gspread
 import pandas as pd
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
-
+import mysql.connector
+from mysql.connector import Error
 
 # ==============================
 # 1. Google Sheets Authentication
@@ -37,7 +38,6 @@ def authenticate_google_sheets():
     ]
     return athletes
 
-
 # ==============================
 # 2. Strava Token Exchange
 # ==============================
@@ -62,7 +62,6 @@ def get_access_token(refresh_token):
     else:
         print("❌ Token exchange failed:", r.text)
         return None
-
 
 # ==============================
 # 3. Fetch Activities
@@ -94,11 +93,65 @@ def fetch_activities(access_token, start_date, end_date):
 
     return activities
 
+# ==============================
+# 4. Save to MySQL Database
+# ==============================
+def save_to_sql(activities_data, db_config):
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+
+        insert_query = """
+        INSERT INTO activities (
+            id, athlete_id, created_at, updated_at, name, type, distance,
+            moving_time, elapsed_time, start_date, start_date_local, timezone, map_polyline
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        current_time = datetime.now()
+
+        for activity in activities_data:
+            try:
+                # Map activity data to SQL table columns
+                activity_tuple = (
+                    activity.get("Activity_ID"),  # id
+                    str(activity.get("Athlete_ID")),  # athlete_id (varchar)
+                    current_time,  # created_at
+                    current_time,  # updated_at
+                    activity.get("Name"),  # name
+                    activity.get("Type"),  # type
+                    activity.get("Distance_m"),  # distance (meters)
+                    activity.get("Moving_Time_s"),  # moving_time (seconds)
+                    activity.get("Elapsed_Time_s"),  # elapsed_time (seconds)
+                    activity.get("Start_Date_UTC"),  # start_date (UTC)
+                    activity.get("Start_Date"),  # start_date_local
+                    activity.get("Timezone"),  # timezone
+                    activity.get("map_polyline")  # map_polyline
+                )
+                cursor.execute(insert_query, activity_tuple)
+            except Error as e:
+                print(f"⚠ Error inserting activity {activity.get('Activity_ID')}: {e}")
+                continue
+
+        connection.commit()
+        print("✅ Activities saved to SQL database")
+        
+    except Error as e:
+        print(f"❌ Error connecting to MySQL database: {e}")
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
 
 # ==============================
-# 4. Extract All Athlete Data to Excel with Pivot
+# 5. Extract All Athlete Data to Excel and SQL
 # ==============================
-def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: str = "athlete_data.xlsx"):
+def extract_athlete_data_to_excel_and_sql(
+    start_date: str,
+    end_date: str,
+    output_file: str = "athlete_data.xlsx",
+    save_to_db: bool = False,
+    db_config: dict = None
+):
     start_dt = datetime.strptime(start_date, "%Y-%m-%d")
     end_dt = datetime.strptime(end_date, "%Y-%m-%d")
     today = datetime.today()
@@ -107,6 +160,7 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
 
     athletes = authenticate_google_sheets()
     all_data = []
+    sql_data = []
 
     for athlete in athletes:
         print(f"➡ Fetching data for {athlete['name']}")
@@ -141,9 +195,11 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
                 "Start_Date_UTC": act.get("start_date"),
                 "Timezone": act.get("timezone"),
                 "Athlete_ID": act.get("athlete", {}).get("id", None),
-                "Athlete_Name": athlete["name"]
+                "Athlete_Name": athlete["name"],
+                "map_polyline": act.get("map", {}).get("polyline", None)  # Map polyline for SQL
             }
             activity_data.append(activity_dict)
+            sql_data.append(activity_dict)
 
         df = pd.DataFrame(activity_data)
 
@@ -188,7 +244,7 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
         fill_value=0
     )
 
-    # Save both sheets
+    # Save to Excel
     with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
         final_df.to_excel(writer, sheet_name="Raw_Data", index=False)
         final_df.to_json("athlete_data.json", orient="records", date_format="iso")
@@ -196,9 +252,27 @@ def extract_athlete_data_to_excel(start_date: str, end_date: str, output_file: s
 
     print(f"✅ Athlete data saved with pivot table to {output_file}")
 
+    # Save to SQL if enabled
+    if save_to_db and db_config:
+        save_to_sql(sql_data, db_config)
 
 # ==============================
-# 5. Main Execution
+# 6. Main Execution
 # ==============================
 if __name__ == "__main__":
-    extract_athlete_data_to_excel("2025-09-15", "2025-10-31", "athlete_data.xlsx")
+    # Example database configuration (update with your credentials)
+    db_config = {
+        "host": "localhost",
+        "port": 3306,
+        "user": os.environ.get("DB_USER"),
+        "password": os.environ.get("DB_PASSWORD"),
+        "database": "jalga2bc_strava"
+    }
+
+    extract_athlete_data_to_excel_and_sql(
+        start_date="2025-09-15",
+        end_date="2025-10-31",
+        output_file="athlete_data.xlsx",
+        save_to_db=True,
+        db_config=db_config
+    )
