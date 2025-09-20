@@ -1,0 +1,6 @@
+requests
+gspread
+pandas
+oauth2client
+mysql-connector-python
+openpyxl
