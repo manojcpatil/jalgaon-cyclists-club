@@ -41,7 +41,7 @@ jobs:
           OUTPUT_FILE: "athlete_data.xlsx"
           JSON_FILE: "athlete_data.json"
         run: |
-          python strava_batch_extractor.py
+          python timepass.py
 
       - name: Upload results as artifact
         uses: actions/upload-artifact@v4
