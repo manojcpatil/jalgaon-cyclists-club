@@ -270,7 +270,7 @@ if __name__ == "__main__":
     }
 
     extract_athlete_data_to_excel_and_sql(
-        start_date="2025-09-15",
+        start_date="2025-09-19",
         end_date="2025-10-31",
         output_file="athlete_data.xlsx",
         save_to_db=True,
