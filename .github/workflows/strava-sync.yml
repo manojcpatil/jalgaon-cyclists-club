@@ -29,17 +29,12 @@ jobs:
           SHEET_URL: ${{ secrets.SHEET_URL }}
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          SAVE_TO_DB: "true"
 
+          # Optional configs
           BATCH_SIZE: "50"
           CHECKPOINT_FILE: "strava_checkpoint.json"
-          OUTPUT_FILE: "athlete_data.xlsx"
-          JSON_FILE: "athlete_data.json"
+          OUTPUT_CSV: "athlete_data.csv"
+          OUTPUT_JSON: "athlete_data.json"
         run: |
           python timepass.py
 
@@ -48,6 +43,6 @@ jobs:
         with:
           name: strava-data
           path: |
-            athlete_data.xlsx
+            athlete_data.csv
             athlete_data.json
             strava_checkpoint.json
