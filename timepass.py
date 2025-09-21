@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Strava batch extractor with rate-limit-safe requests, batching, resume/checkpoint logic,
-AND Excel/JSON append + dedupe by Activity_ID.
+AND CSV/JSON append + dedupe by Activity_ID.
 
 Set environment variables:
  - GOOGLE_SHEETS_JSON, SHEET_URL
  - STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
- - DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME (optional)
- - BATCH_SIZE, STRAVA_PER_PAGE, CHECKPOINT_FILE, OUTPUT_FILE, SAVE_TO_DB
+ - BATCH_SIZE, STRAVA_PER_PAGE, CHECKPOINT_FILE
+ - OUTPUT_CSV, OUTPUT_JSON
 """
+
 import os
 import json
 import time
@@ -17,8 +18,6 @@ import gspread
 import pandas as pd
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
-import mysql.connector
-from mysql.connector import Error
 from typing import List, Optional
 
 # -----------------------
@@ -30,17 +29,9 @@ PER_PAGE = int(os.environ.get("STRAVA_PER_PAGE", "100"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))
 INITIAL_RETRY_SLEEP = int(os.environ.get("INITIAL_RETRY_SLEEP", "5"))
 RATE_LIMIT_SAFETY_BUFFER = int(os.environ.get("RATE_LIMIT_SAFETY_BUFFER", "10"))
-OUTPUT_FILE = os.environ.get("OUTPUT_FILE", "athlete_data.xlsx")
-JSON_FILE = os.environ.get("JSON_FILE", "athlete_data.json")
 
-# MySQL config (optional)
-DB_CONFIG = {
-    "host": os.environ.get("DB_HOST", "localhost"),
-    "port": int(os.environ.get("DB_PORT", "3306")),
-    "user": os.environ.get("DB_USER", ""),
-    "password": os.environ.get("DB_PASSWORD", ""),
-    "database": os.environ.get("DB_NAME", "jalga2bc_strava")
-}
+OUTPUT_CSV = os.environ.get("OUTPUT_CSV", "athlete_data.csv")
+OUTPUT_JSON = os.environ.get("OUTPUT_JSON", "athlete_data.json")
 
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
@@ -82,7 +73,7 @@ def authenticate_google_sheets():
 
     athletes = []
     for r_index, row in enumerate(data, start=2):
-        # Adapt indexes as needed: example uses row[3]=first name, row[4]=last name, row[7]=refresh token
+        # Example uses row[3]=first name, row[4]=last name, row[7]=refresh token
         name = f"{row[3]} {row[4]}".strip() if len(row) > 4 else f"row-{r_index}"
         refresh_token = row[7] if len(row) > 7 else None
         athletes.append({"row_index": r_index, "name": name, "refresh_token": refresh_token})
@@ -207,80 +198,9 @@ def fetch_activities_for_athlete(session: requests.Session, access_token: str, a
     return activities
 
 # -----------------------
-# SQL save helper
-# -----------------------
-def ensure_table_exists(connection):
-    create_sql = """
-    CREATE TABLE IF NOT EXISTS activities (
-        id BIGINT PRIMARY KEY,
-        athlete_id VARCHAR(64),
-        created_at DATETIME,
-        updated_at DATETIME,
-        name VARCHAR(255),
-        type VARCHAR(50),
-        distance DOUBLE,
-        moving_time INT,
-        elapsed_time INT,
-        start_date DATETIME,
-        start_date_local DATETIME,
-        timezone VARCHAR(100),
-        map_polyline TEXT
-    );
-    """
-    cursor = connection.cursor()
-    cursor.execute(create_sql)
-    cursor.close()
-
-def save_activities_to_db(activities_data: List[dict], db_config: dict):
-    if not db_config.get("user"):
-        print("ℹ️ DB not configured (DB_USER missing). Skipping DB save.")
-        return
-    try:
-        connection = mysql.connector.connect(**db_config)
-        ensure_table_exists(connection)
-        cursor = connection.cursor()
-        insert_query = """
-        INSERT INTO activities (
-            id, athlete_id, created_at, updated_at, name, type, distance,
-            moving_time, elapsed_time, start_date, start_date_local, timezone, map_polyline
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            name=VALUES(name), type=VALUES(type), distance=VALUES(distance),
-            moving_time=VALUES(moving_time), elapsed_time=VALUES(elapsed_time),
-            updated_at=VALUES(updated_at)
-        """
-        now = datetime.now()
-        for act in activities_data:
-            tup = (
-                act.get("Activity_ID"),
-                str(act.get("Athlete_ID")),
-                now, now,
-                act.get("Name"),
-                act.get("Type"),
-                act.get("Distance_m"),
-                act.get("Moving_Time_s"),
-                act.get("Elapsed_Time_s"),
-                act.get("Start_Date_UTC"),
-                act.get("Start_Date"),
-                act.get("Timezone"),
-                act.get("map_polyline")
-            )
-            try:
-                cursor.execute(insert_query, tup)
-            except Error as e:
-                print("⚠ Error inserting:", e)
-                continue
-        connection.commit()
-        cursor.close()
-        connection.close()
-        print("✅ Saved activities to DB.")
-    except Error as e:
-        print("❌ DB connection/insert error:", e)
-
-# -----------------------
 # Main extraction logic
 # -----------------------
-def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: str = OUTPUT_FILE, save_to_db: bool = False):
+def extract_athlete_data(start_date_str: str, end_date_str: str, output_csv: str = OUTPUT_CSV, output_json: str = OUTPUT_JSON):
     start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
     end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
     if end_dt > datetime.today():
@@ -299,7 +219,6 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: st
 
     session = requests.Session()
     all_dfs = []
-    sql_activities = []
 
     for i, athlete in enumerate(batch):
         athlete_key = f"{athlete['row_index']}_{athlete['name']}"
@@ -378,7 +297,6 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: st
                 "map_polyline": act.get("map", {}).get("polyline", None)
             }
             activity_data.append(row)
-            sql_activities.append(row)
 
         df = pd.DataFrame(activity_data)
         if not df.empty:
@@ -392,7 +310,7 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: st
             cp.setdefault("athletes", {}).setdefault(athlete_key, {})["last_activity_ts"] = datetime.utcfromtimestamp(newest_ts).isoformat()
 
         save_checkpoint(cp)
-        time.sleep(1.0)  # small sleep between athletes to reduce bursts
+        time.sleep(1.0)
 
     next_batch_index = batch_index + 1
     if next_batch_index * BATCH_SIZE >= total_athletes:
@@ -412,82 +330,38 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: st
         if col in final_df.columns:
             final_df[col] = pd.to_datetime(final_df[col], errors="coerce").dt.tz_localize(None)
 
-    if "Start_Date" in final_df.columns:
-        final_df["Month"] = final_df["Start_Date"].dt.month
-        final_df["Day"] = final_df["Start_Date"].dt.day
-
     # -----------------------
-    # Append to existing Excel/JSON and dedupe by Activity_ID
+    # Append to existing CSV/JSON and dedupe by Activity_ID
     # -----------------------
     try:
-        # Merge with existing JSON if present
-        if os.path.exists(JSON_FILE):
-            try:
-                prev_json = pd.read_json(JSON_FILE)
-                combined = pd.concat([prev_json, final_df], ignore_index=True, sort=False)
-                if "Activity_ID" in combined.columns:
-                    combined.drop_duplicates(subset=["Activity_ID"], inplace=True)
-                final_df = combined
-                print(f"ℹ️ Merged with existing JSON ({JSON_FILE}), deduped.")
-            except Exception as e:
-                print("⚠ Could not read/merge existing JSON, continuing with fresh batch:", e)
-    except Exception:
-        pass
-
-    try:
-        # Merge with existing Excel Raw_Data if present
-        if os.path.exists(output_file):
-            try:
-                prev_df = pd.read_excel(output_file, sheet_name="Raw_Data")
-                combined = pd.concat([prev_df, final_df], ignore_index=True, sort=False)
-                if "Activity_ID" in combined.columns:
-                    combined.drop_duplicates(subset=["Activity_ID"], inplace=True)
-                final_df = combined
-                print(f"ℹ️ Merged with existing Excel ({output_file}), deduped.")
-            except Exception as e:
-                print("⚠ Could not read/merge existing Excel, continuing with fresh batch:", e)
-    except Exception:
-        pass
-
-    # Recompute pivot after merging
-    try:
-        pivot_df = pd.pivot_table(
-            final_df,
-            values="Distance_km",
-            index=["Athlete_Name", "Type"] if "Type" in final_df.columns else ["Athlete_Name"],
-            columns=["Month", "Day"] if "Month" in final_df.columns else None,
-            aggfunc="max",
-            fill_value=0
-        )
-    except Exception:
-        pivot_df = None
-
-    # Save Excel and JSON
-    try:
-        with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-            # Ensure Raw_Data saved
-            try:
-                final_df.to_excel(writer, sheet_name="Raw_Data", index=False)
-            except Exception as e:
-                print("⚠ Could not write Raw_Data to Excel:", e)
-            # Save JSON on disk
-            try:
-                final_df.to_json(JSON_FILE, orient="records", date_format="iso")
-            except Exception as e:
-                print("⚠ Could not write JSON file:", e)
-            # Save pivot sheet if available
-            try:
-                if pivot_df is not None:
-                    pivot_df.to_excel(writer, sheet_name="Pivot_Table")
-            except Exception as e:
-                print("⚠ Could not write Pivot_Table to Excel:", e)
-        print(f"✅ Athlete data saved to {output_file} and {JSON_FILE}")
+        if os.path.exists(output_json):
+            prev_json = pd.read_json(output_json)
+            combined = pd.concat([prev_json, final_df], ignore_index=True, sort=False)
+            if "Activity_ID" in combined.columns:
+                combined.drop_duplicates(subset=["Activity_ID"], inplace=True)
+            final_df = combined
+            print(f"ℹ️ Merged with existing JSON ({output_json}), deduped.")
     except Exception as e:
-        print("❌ Error saving Excel/JSON:", e)
+        print("⚠ Could not read/merge existing JSON, continuing with fresh batch:", e)
 
-    # Save to DB if requested
-    if save_to_db and sql_activities:
-        save_activities_to_db(sql_activities, DB_CONFIG)
+    try:
+        if os.path.exists(output_csv):
+            prev_csv = pd.read_csv(output_csv)
+            combined = pd.concat([prev_csv, final_df], ignore_index=True, sort=False)
+            if "Activity_ID" in combined.columns:
+                combined.drop_duplicates(subset=["Activity_ID"], inplace=True)
+            final_df = combined
+            print(f"ℹ️ Merged with existing CSV ({output_csv}), deduped.")
+    except Exception as e:
+        print("⚠ Could not read/merge existing CSV, continuing with fresh batch:", e)
+
+    # Save CSV and JSON
+    try:
+        final_df.to_csv(output_csv, index=False)
+        final_df.to_json(output_json, orient="records", date_format="iso")
+        print(f"✅ Athlete data saved to {output_csv} and {output_json}")
+    except Exception as e:
+        print("❌ Error saving CSV/JSON:", e)
 
 # -----------------------
 # Entrypoint
@@ -495,6 +369,5 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_file: st
 if __name__ == "__main__":
     START_DATE = os.environ.get("START_DATE", (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d"))
     END_DATE = os.environ.get("END_DATE", datetime.utcnow().strftime("%Y-%m-%d"))
-    SAVE_TO_DB = os.environ.get("SAVE_TO_DB", "true").lower() in ("true", "1", "yes")
 
-    extract_athlete_data(START_DATE, END_DATE, output_file=OUTPUT_FILE, save_to_db=SAVE_TO_DB)
+    extract_athlete_data(START_DATE, END_DATE, output_csv=OUTPUT_CSV, output_json=OUTPUT_JSON)
