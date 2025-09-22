@@ -1,0 +1,52 @@
+name: Missing Athletes Sync
+
+on:
+  workflow_dispatch:     # allow manual run
+  push:
+    paths:
+      - "missing athletes.txt"   # auto-run only when file changes
+
+jobs:
+  run-missing:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to commit updates to repo
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pandas gspread oauth2client
+
+      - name: Process missing athletes
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
+          SHEET_URL: ${{ secrets.SHEET_URL }}
+        run: |
+          python - <<'PY'
+          from timepass import process_missing_athletes_file
+          print(process_missing_athletes_file("missing athletes.txt", max_per_run=20))
+          PY
+
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add athlete_data.csv athlete_data.json strava_checkpoint.json "missing athletes.txt" missing_athletes_processed.log || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "sync: update missing athletes + activity data"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
