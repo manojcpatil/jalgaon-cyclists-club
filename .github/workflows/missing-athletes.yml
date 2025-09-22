@@ -34,10 +34,7 @@ jobs:
           GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
           SHEET_URL: ${{ secrets.SHEET_URL }}
         run: |
-          python - <<'PY'
-          from timepass import process_missing_athletes_file
-          print(process_missing_athletes_file("missing athletes.txt", max_per_run=20))
-          PY
+          python process_missing_athletes
 
       - name: Commit and push updates
         run: |
