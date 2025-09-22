@@ -376,8 +376,24 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_csv: str
 # -----------------------
 # Entrypoint
 # -----------------------
+# -----------------------
+# Entrypoint (robust to empty env vars)
+# -----------------------
 if __name__ == "__main__":
-    START_DATE = os.environ.get("START_DATE", (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d"))
-    END_DATE = os.environ.get("END_DATE", datetime.utcnow().strftime("%Y-%m-%d"))
+    # handle env vars that may exist but be empty strings
+    raw_start = os.environ.get("START_DATE")
+    raw_end = os.environ.get("END_DATE")
 
+    if raw_start and raw_start.strip():
+        START_DATE = raw_start.strip()
+    else:
+        START_DATE = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
+
+    if raw_end and raw_end.strip():
+        END_DATE = raw_end.strip()
+    else:
+        END_DATE = datetime.utcnow().strftime("%Y-%m-%d")
+
+    print(f"ℹ️ Using START_DATE={START_DATE}, END_DATE={END_DATE}")
     extract_athlete_data(START_DATE, END_DATE, output_csv=OUTPUT_CSV, output_json=OUTPUT_JSON)
+
