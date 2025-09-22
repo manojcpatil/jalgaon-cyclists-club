@@ -320,16 +320,6 @@ def process_missing_athletes_file(missing_file: str = "missing athletes.txt",
         print(f"ℹ️ No missing file found at {missing_file}; nothing to do.")
         return summary
 
-    # Ensure the fetch helper exists
-    if "fetch_and_sync_single_athlete" not in globals():
-        # try importing from timepass module if this script is separate
-        try:
-            from timepass import fetch_and_sync_single_athlete  # type: ignore
-        except Exception:
-            msg = "fetch_and_sync_single_athlete not found in this module or importable from timepass.py"
-            print("❌ " + msg)
-            return {"status": "error", "message": msg}
-
     # Read lines
     with open(missing_file, "r", encoding="utf-8") as fh:
         raw_lines = fh.readlines()
