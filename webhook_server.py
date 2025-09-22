@@ -8,7 +8,7 @@ Features:
 - Exchanges refresh_token -> access_token (uses STRAVA_CLIENT_ID/SECRET)
 - Fetches activity details from Strava and appends/updates athlete_data.json and athlete_data.csv
 - Atomic file writes and permission tightening
-- Uses strava_checkpoint.json to store athlete refresh tokens:
+- Uses webhook_strava_checkpoint.json to store athlete refresh tokens:
     { "athletes": { "<athlete_id>": { "refresh_token": "...", "name": "...", "seeded_at": "..." } } }
 
 Environment variables:
@@ -17,7 +17,7 @@ Environment variables:
 - VERIFY_TOKEN         (for Strava webhook verification)
 - OUTPUT_JSON (optional, default: ./athlete_data.json)
 - OUTPUT_CSV  (optional, default: ./athlete_data.csv)
-- CHECKPOINT_FILE (optional, default: ./strava_checkpoint.json)
+- CHECKPOINT_FILE (optional, default: ./webhook_strava_checkpoint.json)
 - PORT (optional, default: 5000)
 """
 import os
@@ -33,7 +33,7 @@ from math import isfinite
 # -----------------------
 OUTPUT_JSON = os.environ.get("OUTPUT_JSON", "athlete_data.json")
 OUTPUT_CSV = os.environ.get("OUTPUT_CSV", "athlete_data.csv")
-CHECKPOINT_FILE = os.environ.get("CHECKPOINT_FILE", "strava_checkpoint.json")
+CHECKPOINT_FILE = os.environ.get("CHECKPOINT_FILE", "webhook_strava_checkpoint.json")
 
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")

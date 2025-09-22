@@ -1,0 +1,14 @@
+{
+  "athletes": {
+    "12345678": {
+      "name": "ANILKUMAR SUPE",
+      "refresh_token": "REPLACE_WITH_REFRESH_TOKEN",
+      "seeded_at": "2025-09-22T10:46:00.259126Z"
+    },
+    "98765432": {
+      "name": "SUNITA SHARMA",
+      "refresh_token": "ANOTHER_REFRESH_TOKEN",
+      "seeded_at": "2025-09-22T10:46:00.259126Z"
+    }
+  }
+}
