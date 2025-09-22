@@ -1,47 +1,92 @@
-name: Strava Sync
+name: Strava sync (commit outputs)
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Every 15 minutes
+    - cron: '*/15 * * * *'   # every 15 minutes
   workflow_dispatch:
 
 jobs:
-  sync:
+  run-and-commit:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          persist-credentials: true  # allow pushing back using GITHUB_TOKEN
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests pandas gspread oauth2client
 
-      - name: Run Strava batch extractor
+      - name: Show repo root and list (debug)
+        run: |
+          echo "WORKDIR: $(pwd)"
+          ls -la
+
+      - name: Run Strava extractor
         env:
-          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
-          SHEET_URL: ${{ secrets.SHEET_URL }}
+          # Required credentials - set these in repo secrets
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-
-          # Optional configs
-          BATCH_SIZE: "50"
-          CHECKPOINT_FILE: "strava_checkpoint.json"
-          OUTPUT_CSV: "athlete_data.csv"
-          OUTPUT_JSON: "athlete_data.json"
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
+          SHEET_URL: ${{ secrets.SHEET_URL }}
+          # Optional overrides:
+          OUTPUT_DIR: .                         # write outputs to repo root so we can commit them
+          OUTPUT_CSV: athlete_data.csv
+          OUTPUT_JSON: athlete_data.json
+          CHECKPOINT_FILE: strava_checkpoint.json
+          START_DATE: ${{ env.START_DATE || '' }}
+          END_DATE: ${{ env.END_DATE || '' }}
         run: |
-          python timepass.py
+          set -eux
+          # Ensure timepass.py is present (rename if needed)
+          if [ -f timepass.py ]; then
+            python timepass.py
+          elif [ -f "timepass (2).py" ]; then
+            # if you only have the original file name
+            python "timepass (2).py"
+          else
+            echo "ERROR: can't find timepass.py or timepass (2).py" >&2
+            exit 2
+          fi
 
-      - name: Upload results as artifact
+      - name: Show generated files (debug)
+        run: |
+          echo "CSV file present?"
+          ls -la athlete_data.csv || true
+          echo "JSON file present?"
+          ls -la athlete_data.json || true
+          echo "Checkpoint present?"
+          ls -la strava_checkpoint.json || true
+
+      - name: Commit and push outputs if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Only add the relevant files to avoid committing unrelated changes
+          git add -A athlete_data.csv athlete_data.json strava_checkpoint.json || true
+
+          # If there are no changes, don't commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update Strava export (runner: $RUNNER_NAME, time: $(date -u +'%Y-%m-%dT%H:%M:%SZ'))" || true
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Outputs committed and pushed"
+          fi
+
+      - name: Upload outputs as artifact (for convenience)
         uses: actions/upload-artifact@v4
         with:
-          name: strava-data
+          name: strava-exports
           path: |
             athlete_data.csv
             athlete_data.json
