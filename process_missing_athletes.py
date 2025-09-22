@@ -1,4 +1,4 @@
-def get_refresh_token_from_sheet_by_athlete_id(target_athlete_id: str) -> Optional[dict]:
+def get_refresh_token_from_sheet_by_athlete_id(target_athlete_id: str):
     """
     Try to find refresh token and a human name for a given athlete id in the Google Sheet.
     Returns dict: {"refresh_token": "...", "row_index": <int>, "name": "..."} or None if not found.
