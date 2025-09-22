@@ -1,37 +1,38 @@
 #!/usr/bin/env python3
 """
-Strava batch extractor with rate-limit-safe requests, batching, resume/checkpoint logic,
-AND CSV/JSON append + dedupe by Activity_ID.
+Strava batch extractor with small safe defaults for GitHub Actions.
 
-Set environment variables:
- - GOOGLE_SHEETS_JSON, SHEET_URL
- - STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
- - BATCH_SIZE, STRAVA_PER_PAGE, CHECKPOINT_FILE
- - OUTPUT_CSV, OUTPUT_JSON
+Put this file in repo as timepass.py and call it from your workflow.
+
+Environment variables used (same as before) plus:
+ - OUTPUT_DIR   (optional) directory to write OUTPUT_CSV / OUTPUT_JSON / CHECKPOINT_FILE into.
 """
 
 import os
 import json
 import time
 import requests
-import gspread
 import pandas as pd
 from datetime import datetime, timedelta
-from oauth2client.service_account import ServiceAccountCredentials
 from typing import List, Optional
 
 # -----------------------
 # Configuration (env vars)
 # -----------------------
-CHECKPOINT_FILE = os.environ.get("CHECKPOINT_FILE", "strava_checkpoint.json")
+# Allow caller to set an output directory (e.g. the repo root)
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", ".")
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+CHECKPOINT_FILE = os.path.join(OUTPUT_DIR, os.environ.get("CHECKPOINT_FILE", "strava_checkpoint.json"))
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "50"))
 PER_PAGE = int(os.environ.get("STRAVA_PER_PAGE", "100"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))
 INITIAL_RETRY_SLEEP = int(os.environ.get("INITIAL_RETRY_SLEEP", "5"))
 RATE_LIMIT_SAFETY_BUFFER = int(os.environ.get("RATE_LIMIT_SAFETY_BUFFER", "10"))
 
-OUTPUT_CSV = os.environ.get("OUTPUT_CSV", "athlete_data.csv")
-OUTPUT_JSON = os.environ.get("OUTPUT_JSON", "athlete_data.json")
+OUTPUT_CSV = os.path.join(OUTPUT_DIR, os.environ.get("OUTPUT_CSV", "athlete_data.csv"))
+OUTPUT_JSON = os.path.join(OUTPUT_DIR, os.environ.get("OUTPUT_JSON", "athlete_data.json"))
 
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
@@ -49,17 +50,23 @@ def load_checkpoint() -> dict:
     return {"last_batch_index": 0, "athletes": {}}
 
 def save_checkpoint(cp: dict):
-    with open(CHECKPOINT_FILE, "w") as fh:
+    tmp = CHECKPOINT_FILE + ".tmp"
+    with open(tmp, "w") as fh:
         json.dump(cp, fh, indent=2, default=str)
+    os.replace(tmp, CHECKPOINT_FILE)
+    print(f"✅ Checkpoint saved: {CHECKPOINT_FILE}")
 
 # -----------------------
-# Google Sheets auth & athletes read
+# (unchanged) Google Sheets auth & athletes read
 # -----------------------
 def authenticate_google_sheets():
+    # Deliberately kept minimal here: original code expects GOOGLE_SHEETS_JSON & SHEET_URL in env.
     google_creds = os.environ.get("GOOGLE_SHEETS_JSON")
     if not google_creds:
         raise ValueError("Missing GOOGLE_SHEETS_JSON in env.")
     creds_dict = json.loads(google_creds)
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(credentials)
@@ -73,14 +80,13 @@ def authenticate_google_sheets():
 
     athletes = []
     for r_index, row in enumerate(data, start=2):
-        # Example uses row[3]=first name, row[4]=last name, row[7]=refresh token
         name = f"{row[3]} {row[4]}".strip() if len(row) > 4 else f"row-{r_index}"
         refresh_token = row[7] if len(row) > 7 else None
         athletes.append({"row_index": r_index, "name": name, "refresh_token": refresh_token})
     return athletes
 
 # -----------------------
-# Strava token exchange
+# Strava token exchange (unchanged)
 # -----------------------
 def exchange_refresh_for_access(refresh_token: str) -> Optional[dict]:
     if not STRAVA_CLIENT_ID or not STRAVA_CLIENT_SECRET:
@@ -105,11 +111,11 @@ def exchange_refresh_for_access(refresh_token: str) -> Optional[dict]:
         return None
 
 # -----------------------
-# Rate-limit safe requests & backoff
+# Rate-limit safe requests & backoff (unchanged)
 # -----------------------
 def parse_rate_headers(headers: dict) -> dict:
-    limits = headers.get("X-RateLimit-Limit", "")
-    usage = headers.get("X-RateLimit-Usage", "")
+    limits = headers.get("X-RateLimit-Limit", "") or headers.get("X-Ratelimit-Limit", "")
+    usage = headers.get("X-RateLimit-Usage", "") or headers.get("X-Ratelimit-Usage", "")
     parsed = {"limit_overall": None, "limit_read": None, "usage_overall": None, "usage_read": None}
     try:
         if limits:
@@ -162,7 +168,7 @@ def safe_get(session: requests.Session, url: str, headers=None, params=None, ret
     raise RuntimeError(f"Failed GET {url} after {retries} retries")
 
 # -----------------------
-# Fetch activities (incremental)
+# Fetch activities (unchanged)
 # -----------------------
 def fetch_activities_for_athlete(session: requests.Session, access_token: str, after_ts: Optional[int], start_date: datetime, end_date: datetime) -> List[dict]:
     url = "https://www.strava.com/api/v3/athlete/activities"
@@ -198,7 +204,7 @@ def fetch_activities_for_athlete(session: requests.Session, access_token: str, a
     return activities
 
 # -----------------------
-# Main extraction logic
+# Main extraction logic (mostly unchanged)
 # -----------------------
 def extract_athlete_data(start_date_str: str, end_date_str: str, output_csv: str = OUTPUT_CSV, output_json: str = OUTPUT_JSON):
     start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
@@ -355,10 +361,14 @@ def extract_athlete_data(start_date_str: str, end_date_str: str, output_csv: str
     except Exception as e:
         print("⚠ Could not read/merge existing CSV, continuing with fresh batch:", e)
 
-    # Save CSV and JSON
+    # Save CSV and JSON atomically
     try:
-        final_df.to_csv(output_csv, index=False)
-        final_df.to_json(output_json, orient="records", date_format="iso")
+        csv_tmp = output_csv + ".tmp"
+        json_tmp = output_json + ".tmp"
+        final_df.to_csv(csv_tmp, index=False)
+        final_df.to_json(json_tmp, orient="records", date_format="iso")
+        os.replace(csv_tmp, output_csv)
+        os.replace(json_tmp, output_json)
         print(f"✅ Athlete data saved to {output_csv} and {output_json}")
     except Exception as e:
         print("❌ Error saving CSV/JSON:", e)
