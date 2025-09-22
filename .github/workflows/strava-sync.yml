@@ -1,5 +1,9 @@
 name: Strava sync (commit outputs)
 
+# grant the workflow explicit write permission to repo contents
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: '*/15 * * * *'   # every 15 minutes
