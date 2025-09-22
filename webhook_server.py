@@ -346,6 +346,145 @@ def strava_webhook():
 def healthz():
     return jsonify({"ok": True, "time": datetime.utcnow().isoformat() + "Z"})
 
+
+import os
+import json
+from datetime import datetime
+from math import isfinite
+
+ATHLETE_JSON = os.environ.get("OUTPUT_JSON", "athlete_data.json")
+
+def _ensure_json_file(path):
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump([], fh, ensure_ascii=False, indent=2)
+
+def _atomic_write(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, ensure_ascii=False, indent=2, default=str)
+    os.replace(tmp, path)
+    try:
+        os.chmod(path, 0o600)
+    except Exception:
+        pass
+
+def _safe_get(d, key, default=None):
+    v = d.get(key, default)
+    # convert floats that are NaN/inf to None
+    try:
+        if isinstance(v, float) and not isfinite(v):
+            return None
+    except Exception:
+        pass
+    return v
+
+def _activity_to_record(activity: dict) -> dict:
+    """
+    Map a Strava activity JSON (as returned by /api/v3/activities/:id)
+    into the schema used in athlete_data.json (sample format in uploaded file). :contentReference[oaicite:2]{index=2}
+    """
+    # parse/normalize dates
+    start_date_local = activity.get("start_date_local") or activity.get("start_date") or None
+    start_date_utc = activity.get("start_date") or activity.get("start_date_local") or None
+
+    # compute month/day if possible
+    month = day = None
+    try:
+        if start_date_local:
+            dt = datetime.fromisoformat(start_date_local.replace("Z", ""))
+            month = float(dt.month)
+            day = float(dt.day)
+    except Exception:
+        month = None
+        day = None
+
+    # distance in meters from Strava (usually meters)
+    distance_m = _safe_get(activity, "distance", None)
+    distance_km = None
+    try:
+        if distance_m is not None:
+            distance_km = round(float(distance_m) / 1000.0, 2)
+    except Exception:
+        distance_km = None
+
+    rec = {
+        "Activity_ID": activity.get("id"),
+        "Name": activity.get("name"),
+        "Type": activity.get("type"),
+        "Start_Date": start_date_local,
+        "Distance_m": distance_m,
+        "Distance_km": distance_km,
+        "Moving_Time_s": _safe_get(activity, "moving_time"),
+        "Elapsed_Time_s": _safe_get(activity, "elapsed_time"),
+        "Total_Elevation_Gain_m": _safe_get(activity, "total_elevation_gain"),
+        # speeds are usually in m/s in Strava response for average_speed, max_speed
+        "Average_Speed_mps": _safe_get(activity, "average_speed"),
+        "Max_Speed_mps": _safe_get(activity, "max_speed"),
+        # cadence / watts may be inside athlete/summary fields — attempt direct keys first
+        "Average_Cadence": _safe_get(activity, "average_cadence"),
+        "Average_Watts": _safe_get(activity, "average_watts"),
+        "Max_Watts": _safe_get(activity, "max_watts"),
+        "Calories": _safe_get(activity, "calories"),
+        "Start_Date_UTC": start_date_utc,
+        # Timezone: keep existing pattern you use e.g. "(GMT+05:30) Asia/Kolkata"
+        "Timezone": activity.get("timezone") or "(GMT+05:30) Asia/Kolkata",
+        # Athlete info (Strava activity contains athlete object or athlete id)
+        "Athlete_ID": activity.get("athlete", {}).get("id") if isinstance(activity.get("athlete"), dict) else activity.get("owner_id") or activity.get("athlete_id") or None,
+        "Athlete_Name": None,
+        "Month": month,
+        "Day": day,
+        "map_polyline": activity.get("map", {}).get("polyline") if activity.get("map") else None
+    }
+
+    # Try to fill Athlete_Name from activity['athlete'] or other available fields
+    try:
+        if isinstance(activity.get("athlete"), dict):
+            rec["Athlete_Name"] = activity["athlete"].get("firstname", "") + (" " + activity["athlete"].get("lastname", "") if activity["athlete"].get("lastname") else "")
+            rec["Athlete_Name"] = rec["Athlete_Name"].strip() or None
+    except Exception:
+        rec["Athlete_Name"] = None
+
+    # Some Strava responses include athlete name at top-level keys or the webhook owner id only.
+    # Keep None if not present — matches your current file which often uses null for missing fields. :contentReference[oaicite:3]{index=3}
+
+    return rec
+
+def append_activity_to_json(activity: dict, json_path: str = ATHLETE_JSON):
+    """
+    Append or update an activity record into athlete_data.json in the same schema as your file.
+    If Activity_ID already exists, it will be replaced (updated).
+    """
+    _ensure_json_file(json_path)
+    try:
+        with open(json_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+            if not isinstance(data, list):
+                data = []
+    except Exception:
+        data = []
+
+    rec = _activity_to_record(activity)
+
+    # dedupe/replace by Activity_ID
+    existing_idx = None
+    for i, r in enumerate(data):
+        if r.get("Activity_ID") == rec.get("Activity_ID"):
+            existing_idx = i
+            break
+
+    if existing_idx is not None:
+        data[existing_idx] = rec
+        action = "updated"
+    else:
+        data.append(rec)
+        action = "added"
+
+    _atomic_write(json_path, data)
+    print(f"✅ {action} activity {rec.get('Activity_ID')} -> {json_path}")
+    return rec
+
+
 # -----------------------
 # Entrypoint
 # -----------------------
