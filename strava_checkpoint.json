@@ -21516,15 +21516,15 @@
     },
     "333_Strava Athlete": {
       "refresh_token": "d843c0e2ddc31c563485f43e2306e9e962689d9b",
-      "last_activity_ts": "2025-09-25T16:11:53.472335"
+      "last_activity_ts": "2025-09-25T19:26:39.282977"
     },
     "334_Strava Athlete": {
       "refresh_token": "276a0de200028e19606695fa5dc3126372487731",
-      "last_activity_ts": "2025-09-25T16:11:53.632850"
+      "last_activity_ts": "2025-09-25T19:26:39.615565"
     },
     "335_Strava Athlete": {
       "refresh_token": "2e1293d24b6fb9da9ee460f4c6ea375edba30b5e",
-      "last_activity_ts": "2025-09-25T16:11:53.834338"
+      "last_activity_ts": "2025-09-25T19:26:40.090775"
     },
     "336_Subhash Kurhe": {
       "refresh_token": "fd1355406544e8f4db4e98fb4b4077d92c3db7c1",
@@ -23180,11 +23180,11 @@
     },
     "336_Strava Athlete": {
       "refresh_token": "276a0de200028e19606695fa5dc3126372487731",
-      "last_activity_ts": "2025-09-25T16:11:53.994653"
+      "last_activity_ts": "2025-09-25T19:26:40.442471"
     },
     "337_Strava Athlete": {
       "refresh_token": "2e1293d24b6fb9da9ee460f4c6ea375edba30b5e",
-      "last_activity_ts": "2025-09-25T16:11:54.183236"
+      "last_activity_ts": "2025-09-25T19:26:40.684884"
     },
     "338_Subhash Kurhe": {
       "refresh_token": "fd1355406544e8f4db4e98fb4b4077d92c3db7c1",
@@ -25473,7 +25473,187 @@
     "301_Sharda Khadke": {
       "refresh_token": "7f62198bd5e06193bf0e9f539b6e8d4ab7edfc95",
       "last_activity_ts": "2025-09-25T16:05:12"
+    },
+    "302_ShashiAaba Ahire (KRUSHNAI RIDERS)": {
+      "refresh_token": "c16788c5d767294eaf7c96e3b591a952018415d4",
+      "last_activity_ts": "2025-09-25T00:34:18"
+    },
+    "303_Shekhar  Mendhe": {
+      "refresh_token": "34cebf2ed89a396925fb7771170188fee70ab72f",
+      "last_activity_ts": "2025-09-25T12:29:37"
+    },
+    "304_SHELAR M.S.  \ud83c\uddee\ud83c\uddf3": {
+      "refresh_token": "77cf85dca79ad7a614561d258d895a3db6a6d3ee",
+      "last_activity_ts": "2025-09-25T01:10:50"
+    },
+    "305_Shilpa Mandore": {
+      "refresh_token": "5324346088b0f7ffe6504a93d1defb90df30d73a",
+      "last_activity_ts": "2025-09-25T02:03:28"
+    },
+    "306_Shilpa Nandeshwar": {
+      "refresh_token": "23da0625e3f022774d5fd96910e9ce0debc8f8ce",
+      "last_activity_ts": "2025-09-25T19:25:52.933930"
+    },
+    "307_Shivaji Golait": {
+      "refresh_token": "0ac1892dfc85809166577c25c554f14b1b5a88e3",
+      "last_activity_ts": "2025-09-25T15:06:24"
+    },
+    "308_Shivaji Patare": {
+      "refresh_token": "7435106d7a566b2a64de42019a66528e8ffc52e0",
+      "last_activity_ts": "2025-09-25T00:33:06"
+    },
+    "309_Shivraj Indalkar": {
+      "refresh_token": "ba16131b15b5d55df7a7fa6e110f583081406738",
+      "last_activity_ts": "2025-09-25T00:11:31"
+    },
+    "310_Shivraj Nirmale": {
+      "refresh_token": "f9db134e0c83bf13415e3bd7d998b744d15bec7c",
+      "last_activity_ts": "2025-09-24T14:26:57"
+    },
+    "311_Shobha Patil": {
+      "refresh_token": "5db5415663117530cc3ac95ec8f55738e2080fc8",
+      "last_activity_ts": "2025-09-25T00:51:53"
+    },
+    "312_Shridhar Rathod": {
+      "refresh_token": "9d46d697ae5499ccc9a4281c994f45fa17c488d0",
+      "last_activity_ts": "2025-09-24T23:50:46"
+    },
+    "313_Shrikant Badave": {
+      "refresh_token": "8875c99e13c9e9d06c4fb37e3e22259fe7b07052",
+      "last_activity_ts": "2025-09-25T19:26:04.469813"
+    },
+    "314_Shrikant Vangari": {
+      "refresh_token": "b7d54f8008f2231ba839cc2eb84957610c459f00",
+      "last_activity_ts": "2025-09-25T02:22:38"
+    },
+    "315_Shrikant C. Badave\ud83c\uddee\ud83c\uddf3": {
+      "refresh_token": "fded41b87b5b98d220c571e844e9d36380b997ba",
+      "last_activity_ts": "2025-08-29T03:10:21"
+    },
+    "316_Shriram Deshpande": {
+      "refresh_token": "de053b8f7dc0ae304033ed0eb91fc8044d97458a",
+      "last_activity_ts": "2025-09-25T03:38:32"
+    },
+    "317_Shubham Marwadi": {
+      "refresh_token": "e22d42d830b9679f8004322c3f9280fa12a1dea4",
+      "last_activity_ts": "2025-09-24T00:00:11"
+    },
+    "318_Shubham Sonawane": {
+      "refresh_token": "24d9b8ebdb3f7fb843af4ee4f18907771e7286fa",
+      "last_activity_ts": "2025-09-25T13:39:00"
+    },
+    "319_Shubhangi Jadhav-Bodkhe": {
+      "refresh_token": "e36040f971bbd2940c2563d1cec0f7dd179f9466",
+      "last_activity_ts": "2025-09-25T14:32:44"
+    },
+    "320_Sidhdeshwar Sakre": {
+      "refresh_token": "aa0aeea27db810632ec4e0c0d61afff364aeeaf3",
+      "last_activity_ts": "2025-09-25T01:21:37"
+    },
+    "321_Smita Gharge": {
+      "refresh_token": "c6bfeebe410a776353e74d248a0b3937707a3bc2",
+      "last_activity_ts": "2025-09-25T03:27:16"
+    },
+    "322_Sneha Marathe": {
+      "refresh_token": "c571f45e4687eebab7ba7f77a4f68e7246afc6a3",
+      "last_activity_ts": "2025-09-24T13:30:31"
+    },
+    "323_Somnath Jadhav": {
+      "refresh_token": "f05c5977d5622097402c13bc621b46842169d976",
+      "last_activity_ts": "2025-09-24T23:59:42"
+    },
+    "324_Sonali Kadam": {
+      "refresh_token": "6abb1fcf78a57da1be830b7d0293bccb5e8d30b3",
+      "last_activity_ts": "2025-09-25T00:55:52"
+    },
+    "325_Sonali Kherudkar": {
+      "refresh_token": "eeb089769b31fadd6363a38e8e6816432ac79006",
+      "last_activity_ts": "2025-09-25T12:54:06"
+    },
+    "326_Sonali Kothawade": {
+      "refresh_token": "31e11d27712442e2ddc6e66e3c13e0935cc97dfb",
+      "last_activity_ts": "2025-09-25T12:40:31"
+    },
+    "327_Sourabh Mhetras": {
+      "refresh_token": "9fc7ba79b501935f6aa7db92fe9ab9548188a8df",
+      "last_activity_ts": "2025-09-25T00:08:20"
+    },
+    "328_SR , Comrade Dr Sagar Dhanodkar": {
+      "refresh_token": "6b024077352d03ef85d29111d5d4b9a78cf08551",
+      "last_activity_ts": "2025-09-25T03:20:21"
+    },
+    "329_SR Aniket Pawar": {
+      "refresh_token": "a92b4042d5a26170ff0d582d109c4b5989c3f06b",
+      "last_activity_ts": "2025-09-24T14:05:26"
+    },
+    "330_SR Bapu Thakare": {
+      "refresh_token": "6b8da7c265ca761ee40c0836430d421939105280",
+      "last_activity_ts": "2025-09-25T00:56:28"
+    },
+    "331_SR DR Rajesh \ud83c\udfc51776\ud83c\udfc6 Thakur": {
+      "refresh_token": "ece3d59136c72d8887f3e732122c5cb52e0708ca",
+      "last_activity_ts": "2025-09-24T14:09:51"
+    },
+    "332_SR Mohan Sonawane": {
+      "refresh_token": "b5c3d1eca02b88ccd4678b24590c8918cf82ff85",
+      "last_activity_ts": "2025-09-25T00:00:49"
+    },
+    "338_Strava Athlete": {
+      "refresh_token": "2e1293d24b6fb9da9ee460f4c6ea375edba30b5e",
+      "last_activity_ts": "2025-09-25T19:26:40.973261"
+    },
+    "339_Subhash Kurhe": {
+      "refresh_token": "fd1355406544e8f4db4e98fb4b4077d92c3db7c1",
+      "last_activity_ts": "2025-09-25T01:34:58"
+    },
+    "340_Subhash Pawar": {
+      "refresh_token": "c7b9e58d4f964ec25dd7369d59b38de36d15f579",
+      "last_activity_ts": "2025-09-10T00:03:03"
+    },
+    "341_Sudam Athare": {
+      "refresh_token": "5f44f3de6bac7f750ac8660ba9829db0a6688504",
+      "last_activity_ts": "2025-09-25T01:10:13"
+    },
+    "342_Sulakshana Pundlik": {
+      "refresh_token": "80310e9b6e1484666768815d96b402ba26d948fa",
+      "last_activity_ts": "2025-09-24T12:54:35"
+    },
+    "343_Sunil Ambadkar": {
+      "refresh_token": "a218715fcd8bfb2e1228e7e97fab19ad076f3993",
+      "last_activity_ts": "2025-09-25T00:04:26"
+    },
+    "344_Sunil Chaudhari": {
+      "refresh_token": "70d6c62a0c13d391d711dad1dc2ed2959c034a7f",
+      "last_activity_ts": "2025-09-13T02:33:20"
+    },
+    "345_Sunil Gawali": {
+      "refresh_token": "57402cdeb1fc4da8261479c2787d5e632c0428d0",
+      "last_activity_ts": "2025-09-25T00:30:54"
+    },
+    "346_SUNIL RAJPUT THAKUR": {
+      "refresh_token": "36c7a1f1936dfcac26d40c032e2b885cf1723454",
+      "last_activity_ts": "2025-09-25T00:38:00"
+    },
+    "347_Sunil Shrivastava": {
+      "refresh_token": "52fb0cb785f411205efefbfa93534176772a59b6",
+      "last_activity_ts": "2025-09-24T22:55:14"
+    },
+    "348_Sunil Sukhwani": {
+      "refresh_token": "af586789fb3819857810926e5e49d54d4596d8a8",
+      "last_activity_ts": "2025-09-25T01:59:36"
+    },
+    "349_Sunil  Koli": {
+      "refresh_token": "99c23bdd9b429853c34fcad429da873a4f69a4fc",
+      "last_activity_ts": "2025-09-25T02:52:05"
+    },
+    "350_Sunita Jadhav": {
+      "refresh_token": "d3f65826fa75e0ffb89a6f8bf92329e168fc98f3",
+      "last_activity_ts": "2025-09-25T00:31:19"
+    },
+    "351_Suraj Kedar": {
+      "refresh_token": "f6b1fc4ea55a6278ccd69a02ce6e88d43848afc8",
+      "last_activity_ts": "2025-09-24T00:22:03"
     }
   },
-  "last_batch_index": 6
+  "last_batch_index": 7
 }
