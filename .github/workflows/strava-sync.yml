@@ -5,8 +5,8 @@ permissions:
   contents: write
 
 on:
-  schedule:
-    - cron: '* * * * *'   # every 20 minutes '*/20 * * * *'
+  # schedule:
+  #  - cron: '* * * * *'   # every 20 minutes '*/20 * * * *'
   workflow_dispatch:
 
 jobs:
