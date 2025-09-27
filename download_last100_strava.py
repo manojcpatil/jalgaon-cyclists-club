@@ -11,7 +11,10 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-STRAVA_ACCESS_TOKEN = os.environ.get("STRAVA_ACCESS_TOKEN")
+STRAVA_ACCESS_TOKEN = '8526ae628d9876cf3a3c4a005e2c85b437daf197' 
+"""
+# os.environ.get("STRAVA_ACCESS_TOKEN")
+"""
 if not STRAVA_ACCESS_TOKEN:
     print("ERROR: set STRAVA_ACCESS_TOKEN in environment"); sys.exit(1)
 
