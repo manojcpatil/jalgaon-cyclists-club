@@ -18,8 +18,8 @@ jobs:
     env:
       OUTPUT_DIR: "strava_output"
       # Optional: tune delay window here if you want different from script defaults
-      DELAY_MIN: "09"
-      DELAY_MAX: "12"
+      DELAY_MIN: "02"
+      DELAY_MAX: "03"
       PERSIST_EVERY: "10"
     steps:
       - name: Checkout repository
