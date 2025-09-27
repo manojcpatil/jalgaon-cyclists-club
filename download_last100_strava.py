@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""
+Download last 100 activities for the authenticated athlete (no profile read).
+Outputs: CSV, JSON, SQLite DB and a .sql dump file.
+Requires: STRAVA_ACCESS_TOKEN in env.
+"""
+
+import os, sys, json, sqlite3, time
+from typing import List
+import requests
+import pandas as pd
+from datetime import datetime
+
+STRAVA_ACCESS_TOKEN = os.environ.get("STRAVA_ACCESS_TOKEN")
+if not STRAVA_ACCESS_TOKEN:
+    print("ERROR: set STRAVA_ACCESS_TOKEN in environment"); sys.exit(1)
+
+OUT_DIR = os.environ.get("OUTPUT_DIR", ".")
+os.makedirs(OUT_DIR, exist_ok=True)
+
+OUT_CSV = os.path.join(OUT_DIR, "activities_last100.csv")
+OUT_JSON = os.path.join(OUT_DIR, "activities_last100.json")
+OUT_DB  = os.path.join(OUT_DIR, "activities_last100.db")
+OUT_SQL = os.path.join(OUT_DIR, "activities_last100.sql")
+
+API_URL = "https://www.strava.com/api/v3/athlete/activities"
+PER_PAGE = 100
+PAGE = 1
+
+HEADERS = {"Authorization": f"Bearer {STRAVA_ACCESS_TOKEN}"}
+
+def safe_get(url, params=None, retries=3, backoff=5):
+    for attempt in range(1, retries+1):
+        r = requests.get(url, headers=HEADERS, params=params, timeout=30)
+        if r.status_code == 200:
+            return r
+        if r.status_code == 429:
+            reset_msg = r.headers.get("Retry-After") or "sleeping 60s"
+            wait = int(r.headers.get("Retry-After", 60))
+            print(f"Rate limited (429). Waiting {wait}s (attempt {attempt}/{retries})")
+            time.sleep(wait)
+            continue
+        if 500 <= r.status_code < 600:
+            print(f"Server error {r.status_code}, retrying after {backoff}s (attempt {attempt}/{retries})")
+            time.sleep(backoff)
+            backoff *= 2
+            continue
+        r.raise_for_status()
+    raise RuntimeError("Failed to GET after retries")
+
+def flatten_activity(act: dict) -> dict:
+    return {
+        "activity_id": act.get("id"),
+        "name": act.get("name"),
+        "type": act.get("type"),
+        "start_date_local": act.get("start_date_local"),
+        "start_date_utc": act.get("start_date"),
+        "distance_m": act.get("distance"),
+        "distance_km": (act.get("distance") or 0) / 1000.0,
+        "moving_time_s": act.get("moving_time"),
+        "elapsed_time_s": act.get("elapsed_time"),
+        "total_elevation_gain_m": act.get("total_elevation_gain"),
+        "average_speed_mps": act.get("average_speed"),
+        "max_speed_mps": act.get("max_speed"),
+        "average_watts": act.get("average_watts"),
+        "calories": act.get("calories"),
+        "map_polyline": (act.get("map") or {}).get("polyline"),
+        "timezone": act.get("timezone")
+    }
+
+def fetch_last_100() -> List[dict]:
+    params = {"per_page": PER_PAGE, "page": PAGE}
+    resp = safe_get(API_URL, params=params)
+    return resp.json()
+
+def save_csv_json(rows: List[dict]):
+    df = pd.DataFrame(rows)
+    # tidy datetimes
+    for c in ("start_date_local", "start_date_utc"):
+        if c in df.columns:
+            df[c] = pd.to_datetime(df[c], errors="coerce")
+    df.to_csv(OUT_CSV, index=False)
+    df.to_json(OUT_JSON, orient="records", date_format="iso")
+    print(f"Saved CSV: {OUT_CSV}  JSON: {OUT_JSON}")
+
+def save_sqlite(rows: List[dict]):
+    conn = sqlite3.connect(OUT_DB)
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS activities (
+        activity_id INTEGER PRIMARY KEY,
+        name TEXT,
+        type TEXT,
+        start_date_local TEXT,
+        start_date_utc TEXT,
+        distance_m REAL,
+        distance_km REAL,
+        moving_time_s INTEGER,
+        elapsed_time_s INTEGER,
+        total_elevation_gain_m REAL,
+        average_speed_mps REAL,
+        max_speed_mps REAL,
+        average_watts REAL,
+        calories REAL,
+        map_polyline TEXT,
+        timezone TEXT
+    );
+    """)
+    insert_sql = """
+    INSERT OR REPLACE INTO activities (
+      activity_id,name,type,start_date_local,start_date_utc,distance_m,distance_km,
+      moving_time_s,elapsed_time_s,total_elevation_gain_m,average_speed_mps,max_speed_mps,
+      average_watts,calories,map_polyline,timezone
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """
+    to_insert = []
+    for r in rows:
+        to_insert.append((
+            r.get("activity_id"), r.get("name"), r.get("type"),
+            r.get("start_date_local"), r.get("start_date_utc"),
+            r.get("distance_m"), r.get("distance_km"),
+            r.get("moving_time_s"), r.get("elapsed_time_s"),
+            r.get("total_elevation_gain_m"), r.get("average_speed_mps"),
+            r.get("max_speed_mps"), r.get("average_watts"),
+            r.get("calories"), r.get("map_polyline"), r.get("timezone")
+        ))
+    cur.executemany(insert_sql, to_insert)
+    conn.commit()
+    conn.close()
+    print(f"Saved SQLite DB: {OUT_DB}")
+
+def write_sql_dump(rows: List[dict]):
+    # write CREATE TABLE + INSERT statements
+    create_stmt = """-- SQL dump generated by script
+CREATE TABLE IF NOT EXISTS activities (
+  activity_id INTEGER PRIMARY KEY,
+  name TEXT,
+  type TEXT,
+  start_date_local TEXT,
+  start_date_utc TEXT,
+  distance_m REAL,
+  distance_km REAL,
+  moving_time_s INTEGER,
+  elapsed_time_s INTEGER,
+  total_elevation_gain_m REAL,
+  average_speed_mps REAL,
+  max_speed_mps REAL,
+  average_watts REAL,
+  calories REAL,
+  map_polyline TEXT,
+  timezone TEXT
+);
+"""
+    with open(OUT_SQL, "w", encoding="utf-8") as fh:
+        fh.write(create_stmt + "\n")
+        for r in rows:
+            vals = [
+                r.get("activity_id"),
+                r.get("name") and r["name"].replace("'", "''") or None,
+                r.get("type"),
+                r.get("start_date_local"),
+                r.get("start_date_utc"),
+                r.get("distance_m"),
+                r.get("distance_km"),
+                r.get("moving_time_s"),
+                r.get("elapsed_time_s"),
+                r.get("total_elevation_gain_m"),
+                r.get("average_speed_mps"),
+                r.get("max_speed_mps"),
+                r.get("average_watts"),
+                r.get("calories"),
+                r.get("map_polyline") and r["map_polyline"].replace("'", "''") or None,
+                r.get("timezone")
+            ]
+            # create INSERT statement with NULL handling
+            def fmt(v):
+                if v is None:
+                    return "NULL"
+                if isinstance(v, (int, float)):
+                    return str(v)
+                return f"'{str(v)}'"
+            fh.write("INSERT OR REPLACE INTO activities VALUES (" + ", ".join(fmt(x) for x in vals) + ");\n")
+    print(f"Saved SQL dump: {OUT_SQL}")
+
+def main():
+    print("Fetching last 100 activities...")
+    raw = fetch_last_100()
+    if not isinstance(raw, list):
+        print("Unexpected response:", raw); sys.exit(1)
+    rows = [flatten_activity(a) for a in raw]
+    save_csv_json(rows)
+    save_sqlite(rows)
+    write_sql_dump(rows)
+    print("Done.")
+
+if __name__ == "__main__":
+    main()
