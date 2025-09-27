@@ -1,0 +1,76 @@
+name: Download Strava activities for one athlete
+
+on:
+  workflow_dispatch:
+    inputs:
+      athlete_id:
+        description: "Athlete ID or Username (must exist in Google Sheet)"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  download-one-athlete:
+    runs-on: ubuntu-latest
+    env:
+      OUTPUT_DIR: "strava_output"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas gspread oauth2client
+
+      - name: Create output dir
+        run: mkdir -p "${{ env.OUTPUT_DIR }}"
+
+      - name: Run extractor for one athlete
+        env:
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
+          SHEET_URL: ${{ secrets.SHEET_URL }}
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          TARGET_ATHLETE_ID: ${{ github.event.inputs.athlete_id }}
+          OUTPUT_DIR: ${{ env.OUTPUT_DIR }}
+        run: |
+          if [ ! -f ./download_one_from_sheet.py ]; then
+            echo "ERROR: download_one_from_sheet.py not found in repo root"
+            exit 2
+          fi
+          python ./download_one_from_sheet.py
+
+      - name: List outputs
+        run: ls -la "${OUTPUT_DIR}" || true
+
+      - name: Upload outputs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: strava-one-athlete-${{ github.event.inputs.athlete_id }}
+          path: |
+            ${{ env.OUTPUT_DIR }}/*
+
+      # Optional: commit generated files back to the repo
+      - name: Commit outputs back to repo (optional)
+        if: always()
+        env:
+          GIT_EMAIL: actions@github.com
+          GIT_NAME: "github-actions[bot]"
+        run: |
+          git config user.email "${GIT_EMAIL}"
+          git config user.name "${GIT_NAME}"
+          git add "${{ env.OUTPUT_DIR }}" || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update Strava outputs for athlete ${{ github.event.inputs.athlete_id }} ($(date -u +'%Y-%m-%d %H:%M UTC'))" || true
+            git push origin HEAD || true
+          else
+            echo "No changes to commit."
+          fi
