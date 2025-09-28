@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Download last 30 activities for a single athlete looked up from a Google Sheet.
+Download last 30 activities for a single athlete looked up from a Google Sheet,
+and merge them into the shared all_athletes dataset.
 
 Environment variables required:
   - GOOGLE_SHEETS_JSON  (service-account JSON text)
@@ -17,13 +18,11 @@ import os
 import sys
 import json
 import sqlite3
-import time
 from typing import Optional
 from datetime import datetime
 
 import requests
 import pandas as pd
-
 
 # ---------------------------
 # Config / env
@@ -41,38 +40,28 @@ if not (GOOGLE_SHEETS_JSON and SHEET_URL and TARGET_ATHLETE_ID):
 OUT_DIR = os.environ.get("OUTPUT_DIR", "strava_output")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-OUT_CSV = os.path.join(OUT_DIR, f"athlete_{TARGET_ATHLETE_ID}_activities.csv")
-OUT_JSON = os.path.join(OUT_DIR, f"athlete_{TARGET_ATHLETE_ID}_activities.json")
-OUT_DB = os.path.join(OUT_DIR, f"athlete_{TARGET_ATHLETE_ID}_activities.db")
-OUT_SQL = os.path.join(OUT_DIR, f"athlete_{TARGET_ATHLETE_ID}_activities.sql")
+# use the *shared* outputs instead of per-athlete
+OUT_DB = os.path.join(OUT_DIR, "all_athletes_activities.db")
+OUT_CSV = os.path.join(OUT_DIR, "all_athletes_activities.csv")
+OUT_JSON = os.path.join(OUT_DIR, "all_athletes_activities.json")
+OUT_SQL = os.path.join(OUT_DIR, "all_athletes_activities.sql")
 
 API_URL = "https://www.strava.com/api/v3/athlete/activities"
-PER_PAGE = 30  # last 30 activities
+PER_PAGE = 30
 PAGE = 1
-
 
 # ---------------------------
 # Google Sheets read
 # ---------------------------
 def read_sheet_rows():
-    """
-    Return list of rows as dicts via gspread using service account JSON text in env.
-    """
     creds = json.loads(GOOGLE_SHEETS_JSON)
-    try:
-        import gspread
-        from oauth2client.service_account import ServiceAccountCredentials
-    except Exception as e:
-        print("Missing libraries for Google Sheets. Please pip install gspread oauth2client")
-        raise
-
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds, scope)
     client = gspread.authorize(credentials)
     sheet = client.open_by_url(SHEET_URL).sheet1
-    rows = sheet.get_all_records()
-    return rows
-
+    return sheet.get_all_records()
 
 # ---------------------------
 # Strava token exchange
@@ -91,9 +80,6 @@ def exchange_refresh_for_access(refresh_token: str) -> Optional[str]:
         r = requests.post(url, data=payload, timeout=30)
         if r.status_code == 200:
             data = r.json()
-            # inform user if refresh token rotated
-            if data.get("refresh_token"):
-                print("🔁 Strava returned a new refresh token — consider saving it.")
             return data.get("access_token")
         else:
             print(f"Token exchange failed: {r.status_code} {r.text}")
@@ -101,7 +87,6 @@ def exchange_refresh_for_access(refresh_token: str) -> Optional[str]:
     except requests.RequestException as e:
         print("Token exchange error:", e)
         return None
-
 
 # ---------------------------
 # Fetch activities
@@ -120,9 +105,8 @@ def fetch_activities(access_token: str):
         print("Failed to fetch activities:", r.status_code, r.text)
         return []
 
-
 # ---------------------------
-# Helpers to robustly read fields from sheet
+# Helpers
 # ---------------------------
 def _get_field(row: dict, *variants, default=None):
     for v in variants:
@@ -130,10 +114,6 @@ def _get_field(row: dict, *variants, default=None):
             return row[v]
     return default
 
-
-# ---------------------------
-# Flatten activity
-# ---------------------------
 def flatten_activity(act: dict, athlete_id: str, athlete_name: str) -> dict:
     return {
         "athlete_id": athlete_id,
@@ -150,112 +130,96 @@ def flatten_activity(act: dict, athlete_id: str, athlete_name: str) -> dict:
         "total_elevation_gain_m": act.get("total_elevation_gain"),
         "average_speed_mps": act.get("average_speed"),
         "calories": act.get("calories"),
+        "fetched_at_utc": datetime.utcnow().isoformat(),
     }
 
-
 # ---------------------------
-# Save outputs
+# Storage helpers (shared DB)
 # ---------------------------
-def save_outputs(rows):
-    df = pd.DataFrame(rows)
-    # tidy datetimes
-    for c in ("start_date_local", "start_date_utc"):
-        if c in df.columns:
-            df[c] = pd.to_datetime(df[c], errors="coerce")
-
-    df.to_csv(OUT_CSV, index=False)
-    df.to_json(OUT_JSON, orient="records", date_format="iso")
-    print(f"Saved CSV: {OUT_CSV}")
-    print(f"Saved JSON: {OUT_JSON}")
-
-    # sqlite
+def ensure_db():
     conn = sqlite3.connect(OUT_DB)
     cur = conn.cursor()
     cur.execute(
         """
-    CREATE TABLE IF NOT EXISTS activities (
-       athlete_id TEXT,
-       athlete_name TEXT,
-       activity_id INTEGER PRIMARY KEY,
-       name TEXT,
-       type TEXT,
-       start_date_local TEXT,
-       start_date_utc TEXT,
-       distance_m REAL,
-       distance_km REAL,
-       moving_time_s INTEGER,
-       elapsed_time_s INTEGER,
-       total_elevation_gain_m REAL,
-       average_speed_mps REAL,
-       calories REAL
-    );
-    """
+        CREATE TABLE IF NOT EXISTS activities (
+           athlete_id TEXT,
+           athlete_name TEXT,
+           activity_id INTEGER PRIMARY KEY,
+           name TEXT,
+           type TEXT,
+           start_date_local TEXT,
+           start_date_utc TEXT,
+           distance_m REAL,
+           distance_km REAL,
+           moving_time_s INTEGER,
+           elapsed_time_s INTEGER,
+           total_elevation_gain_m REAL,
+           average_speed_mps REAL,
+           calories REAL,
+           fetched_at_utc TEXT
+        );
+        """
     )
+    conn.commit()
+    conn.close()
+
+def append_to_db(rows):
+    if not rows:
+        return
+    conn = sqlite3.connect(OUT_DB)
+    cur = conn.cursor()
     insert_sql = """INSERT OR REPLACE INTO activities (
-       athlete_id, athlete_name, activity_id, name, type, start_date_local, start_date_utc,
-       distance_m, distance_km, moving_time_s, elapsed_time_s, total_elevation_gain_m,
-       average_speed_mps, calories
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);"""
-    to_insert = []
-    for r in rows:
-        to_insert.append(
-            (
-                r.get("athlete_id"),
-                r.get("athlete_name"),
-                r.get("activity_id"),
-                r.get("name"),
-                r.get("type"),
-                str(r.get("start_date_local")),
-                str(r.get("start_date_utc")),
-                r.get("distance_m"),
-                r.get("distance_km"),
-                r.get("moving_time_s"),
-                r.get("elapsed_time_s"),
-                r.get("total_elevation_gain_m"),
-                r.get("average_speed_mps"),
-                r.get("calories"),
-            )
-        )
+       athlete_id, athlete_name, activity_id, name, type,
+       start_date_local, start_date_utc, distance_m, distance_km,
+       moving_time_s, elapsed_time_s, total_elevation_gain_m,
+       average_speed_mps, calories, fetched_at_utc
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);"""
+    to_insert = [(
+        r.get("athlete_id"), r.get("athlete_name"), r.get("activity_id"),
+        r.get("name"), r.get("type"), r.get("start_date_local"),
+        r.get("start_date_utc"), r.get("distance_m"), r.get("distance_km"),
+        r.get("moving_time_s"), r.get("elapsed_time_s"),
+        r.get("total_elevation_gain_m"), r.get("average_speed_mps"),
+        r.get("calories"), r.get("fetched_at_utc")
+    ) for r in rows]
     cur.executemany(insert_sql, to_insert)
     conn.commit()
     conn.close()
-    print(f"Saved SQLite DB: {OUT_DB}")
 
-    # SQL dump (escaped properly)
-    with open(OUT_SQL, "w", encoding="utf-8") as fh:
-        fh.write("-- SQL dump generated by script\n")
-        fh.write(
-            "CREATE TABLE IF NOT EXISTS activities (\n"
-            "  athlete_id TEXT,\n"
-            "  athlete_name TEXT,\n"
-            "  activity_id INTEGER PRIMARY KEY,\n"
-            "  name TEXT,\n"
-            "  type TEXT,\n"
-            "  start_date_local TEXT,\n"
-            "  start_date_utc TEXT,\n"
-            "  distance_m REAL,\n"
-            "  distance_km REAL,\n"
-            "  moving_time_s INTEGER,\n"
-            "  elapsed_time_s INTEGER,\n"
-            "  total_elevation_gain_m REAL,\n"
-            "  average_speed_mps REAL,\n"
-            "  calories REAL\n"
-            ");\n"
-        )
+def persist_csv_json_sql():
+    conn = sqlite3.connect(OUT_DB)
+    try:
+        df = pd.read_sql_query("SELECT * FROM activities", conn)
+        if df.empty:
+            print("DB empty; nothing to export.")
+            return
+        df.drop_duplicates(subset=["activity_id"], inplace=True)
+        for c in ("start_date_local", "start_date_utc", "fetched_at_utc"):
+            if c in df.columns:
+                df[c] = pd.to_datetime(df[c], errors="coerce")
+        df.to_csv(OUT_CSV, index=False)
+        df.to_json(OUT_JSON, orient="records", date_format="iso")
+        print(f"Persisted CSV/JSON with {len(df)} unique activities.")
 
-        def fmt(v):
-            if v is None:
-                return "NULL"
-            if isinstance(v, (int, float)):
-                return str(v)
-            escaped = str(v).replace("'", "''")
-            return "'" + escaped + "'"
-
-        for r in to_insert:
-            fh.write("INSERT OR REPLACE INTO activities VALUES (" + ", ".join(fmt(x) for x in r) + ");\n")
-
-    print(f"Saved SQL dump: {OUT_SQL}")
-
+        with open(OUT_SQL, "w", encoding="utf-8") as fh:
+            fh.write("-- SQL dump generated by script\n")
+            fh.write("CREATE TABLE IF NOT EXISTS activities (\n"
+                     "   athlete_id TEXT, athlete_name TEXT, activity_id INTEGER PRIMARY KEY, name TEXT, type TEXT,\n"
+                     "   start_date_local TEXT, start_date_utc TEXT, distance_m REAL, distance_km REAL,\n"
+                     "   moving_time_s INTEGER, elapsed_time_s INTEGER, total_elevation_gain_m REAL,\n"
+                     "   average_speed_mps REAL, calories REAL, fetched_at_utc TEXT\n);")
+            for _, row in df.iterrows():
+                vals = [row.get(c) for c in df.columns]
+                def fmt(v):
+                    if v is None:
+                        return "NULL"
+                    if isinstance(v, (int, float)):
+                        return str(v)
+                    return "'" + str(v).replace("'", "''") + "'"
+                fh.write("\nINSERT OR REPLACE INTO activities VALUES (" + ", ".join(fmt(x) for x in vals) + ");")
+        print(f"Wrote SQL dump: {OUT_SQL}")
+    finally:
+        conn.close()
 
 # ---------------------------
 # Main
@@ -266,19 +230,7 @@ def main():
     target = TARGET_ATHLETE_ID.strip()
     found = None
     for r in rows:
-        # accept variations of header names
-        aid = str(
-            _get_field(
-                r,
-                "Athlete ID",
-                "AthleteID",
-                "Athlete Id",
-                "athlete id",
-                "Athlete_Id",
-                default="",
-            )
-            or ""
-        ).strip()
+        aid = str(_get_field(r, "Athlete ID", "AthleteID", "Athlete Id", "athlete id", "Athlete_Id", default="") or "").strip()
         uname = str(_get_field(r, "Username", "username", "user", default="") or "").strip()
         firstname = _get_field(r, "Firstname", "First Name", "First", "firstname", default="") or ""
         lastname = _get_field(r, "Lastname", "Last Name", "Last", "lastname", default="") or ""
@@ -295,11 +247,9 @@ def main():
     athlete_id = found["athlete_id"]
     athlete_name = found["name"]
 
-    # token fields - support multiple header variants
-    access_token = _get_field(row, "Access Token", "AccessToken", "access token", "access_token", default=None)
-    refresh_token = _get_field(row, "Refresh Token", "RefreshToken", "refresh token", "refresh_token", default=None)
+    access_token = _get_field(row, "Access Token", "AccessToken", "access token", "access_token")
+    refresh_token = _get_field(row, "Refresh Token", "RefreshToken", "refresh token", "refresh_token")
 
-    # Prefer exchanging refresh token for a fresh access token if available
     if refresh_token and STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET:
         new_access = exchange_refresh_for_access(refresh_token)
         if new_access:
@@ -312,8 +262,10 @@ def main():
     acts = fetch_activities(access_token)
     flat = [flatten_activity(a, athlete_id, athlete_name) for a in acts]
     print(f"Fetched {len(flat)} activities for {athlete_name} ({athlete_id})")
-    save_outputs(flat)
 
+    ensure_db()
+    append_to_db(flat)
+    persist_csv_json_sql()
 
 if __name__ == "__main__":
     main()
