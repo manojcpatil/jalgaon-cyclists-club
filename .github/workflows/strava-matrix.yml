@@ -18,7 +18,7 @@ jobs:
       - name: Install Python deps (for matrix generation)
         run: |
           python -m pip install --upgrade pip
-          pip install gspread oauth2client pandas
+          pip install gspread oauth2client
 
       - name: Generate athlete matrix JSON
         id: gen-matrix
@@ -27,17 +27,27 @@ jobs:
           SHEET_URL: ${{ secrets.SHEET_URL }}
         run: |
           python - <<'PY' > athletes.json
-          import json
-          from download_one_from_sheet import read_sheet_rows, _get_field
-          rows = read_sheet_rows()
+          import os, json
+          import gspread
+          from oauth2client.service_account import ServiceAccountCredentials
+
+          # load creds and open sheet
+          creds = json.loads(os.environ["GOOGLE_SHEETS_JSON"])
+          scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+          credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds, scope)
+          client = gspread.authorize(credentials)
+          sheet = client.open_by_url(os.environ["SHEET_URL"]).sheet1
+          rows = sheet.get_all_records()
+
           include = []
           for r in rows:
-              aid = str(_get_field(r, "Athlete ID", "AthleteID", "Athlete Id", "athlete id", "Athlete_Id", default="") or "").strip()
-              # OPTIONAL: only include rows that have a refresh/access token to avoid failures
-              # refresh = _get_field(r, "Refresh Token", "RefreshToken", default="") or ""
-              # if aid and refresh:
+              # try several possible column names for Athlete ID
+              aid = (r.get("Athlete ID") or r.get("AthleteID") or r.get("Athlete Id")
+                     or r.get("athlete id") or r.get("Athlete_Id") or "").strip()
               if aid:
                   include.append({"athlete_id": aid})
+
+          # output must be {"include": [ { "athlete_id": "..." }, ... ]}
           print(json.dumps({"include": include}))
           PY
           cat athletes.json
@@ -45,8 +55,8 @@ jobs:
       - name: Set matrix output for downstream jobs
         id: set-matrix
         run: |
-          # write the JSON into the step output (job output maps to this)
           echo "matrix=$(cat athletes.json)" >> $GITHUB_OUTPUT
+
 
   run-athlete:
     needs: build-matrix
