@@ -1,78 +1,98 @@
-name: Strava sync (matrix)
+name: Strava sync (from-file matrix)
 
 on:
   workflow_dispatch:
+    inputs:
+      file:
+        description: 'Relative path to athlete file (txt or csv)'
+        required: false
+        default: 'athletes.txt'
+      start_index:
+        description: 'Optional start index (0-based) to batch'
+        required: false
+        default: '0'
+      end_index:
+        description: 'Optional end index (exclusive) to batch'
+        required: false
+        default: '0'
 
 permissions:
-  contents: write   # required only if you want the workflow to commit files back to repo
+  contents: write
 
 jobs:
-  build-matrix:
+  build-matrix-from-file:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Python deps (for matrix generation)
-        run: |
-          python -m pip install --upgrade pip
-          pip install gspread oauth2client
-
-      - name: Generate athlete matrix JSON
+      - name: Build matrix JSON from file
         id: gen-matrix
-        env:
-          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
-          SHEET_URL: ${{ secrets.SHEET_URL }}
         run: |
+          FILE="${{ github.event.inputs.file }}"
+          START_IDX="${{ github.event.inputs.start_index }}"
+          END_IDX="${{ github.event.inputs.end_index }}"
+
           python - <<'PY' > athletes.json
-          import os, json
-          import gspread
-          from oauth2client.service_account import ServiceAccountCredentials
+          import sys, json, csv, os
 
-          def get_cell_str(row, *keys):
-              """Return first matching key from row as a stripped string (safe for ints/None)."""
-              for k in keys:
-                  if k in row and row[k] is not None:
-                      return str(row[k]).strip()
-              return ""
+          file_path = os.environ.get("FILE")
+          start = int(os.environ.get("START_IDX", "0") or 0)
+          end = int(os.environ.get("END_IDX", "0") or 0)
 
-          # load creds and open sheet
-          creds = json.loads(os.environ["GOOGLE_SHEETS_JSON"])
-          scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-          credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds, scope)
-          client = gspread.authorize(credentials)
-          sheet = client.open_by_url(os.environ["SHEET_URL"]).sheet1
-          rows = sheet.get_all_records()
+          if not os.path.exists(file_path):
+              print(json.dumps({"include": []}))
+              sys.exit(0)
 
-          include = []
-          for r in rows:
-              # try several possible column names for Athlete ID (safe conversion)
-              aid = get_cell_str(r, "Athlete ID", "AthleteID", "Athlete Id", "athlete id", "Athlete_Id")
-              # OPTIONAL: require a refresh token to avoid runs for rows without credentials
-              # refresh = get_cell_str(r, "Refresh Token", "RefreshToken", "refresh token")
-              # if aid and refresh:
-              if aid:
-                  include.append({"athlete_id": aid})
+          ids = []
+          # If file looks like csv (has comma) try csv parsing with header
+          if file_path.lower().endswith(".csv"):
+              with open(file_path, newline='', encoding='utf-8') as fh:
+                  reader = csv.DictReader(fh)
+                  # support different header names
+                  for r in reader:
+                      for h in ("athlete_id","Athlete ID","id","athlete"):
+                          if h in r and r[h] is not None and str(r[h]).strip()!="":
+                              ids.append(str(r[h]).strip())
+                              break
+          else:
+              # treat as plain text: one id per line
+              with open(file_path, encoding='utf-8') as fh:
+                  for line in fh:
+                      v = line.strip()
+                      if v:
+                          ids.append(v)
 
-          out = {"include": include}
-          print(json.dumps(out))
+          # apply optional slicing (batching)
+          if end and end > 0:
+              slice_ids = ids[start:end]
+          else:
+              slice_ids = ids[start:]
+
+          include = [{"athlete_id": x} for x in slice_ids]
+          print(json.dumps({"include": include}))
           PY
-          cat athletes.json
-
-      - name: Set matrix output for downstream jobs
-        id: set-matrix
+        env:
+          FILE: ${{ github.event.inputs.file }}
+          START_IDX: ${{ github.event.inputs.start_index }}
+          END_IDX: ${{ github.event.inputs.end_index }}
+      - name: show matrix
         run: |
-          echo "matrix=$(cat athletes.json)" >> $GITHUB_OUTPUT
+          cat athletes.json || true
+
+      - name: set output
+        id: set-matrix
+        run: echo "matrix=$(cat athletes.json)" >> $GITHUB_OUTPUT
 
   run-athlete:
-    needs: build-matrix
+    needs: build-matrix-from-file
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.build-matrix.outputs.matrix).include }}
-      max-parallel: 2   # ADJUST: set to 1 or 2 if Strava rate limits are a concern
+      matrix: ${{ fromJson(needs.build-matrix-from-file.outputs.matrix).include }}
+      max-parallel: 2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,17 +100,17 @@ jobs:
       - name: Install runtime deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true   # adjust to your deps (pandas, requests, etc.)
+          pip install -r requirements.txt || true
 
       - name: Run download for athlete
         env:
-          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
+          TARGET_ATHLETE_ID: ${{ matrix.athlete_id }}
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}   # optional if script still needs sheet access
           SHEET_URL: ${{ secrets.SHEET_URL }}
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          TARGET_ATHLETE_ID: ${{ matrix.athlete_id }}
         run: |
-          echo "Starting sync for athlete: $TARGET_ATHLETE_ID"
+          echo "Running for athlete: $TARGET_ATHLETE_ID"
           python download_one_from_sheet.py
 
       - name: Commit outputs (optional)
@@ -101,5 +121,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add strava_output || true
-          git commit -m "Strava outputs: $TARGET_ATHLETE_ID" || echo "no changes to commit"
-          git push || echo "push failed (maybe permissions)"
+          git commit -m "Strava outputs: $TARGET_ATHLETE_ID" || echo "no changes"
+          git push || echo "push failed"
