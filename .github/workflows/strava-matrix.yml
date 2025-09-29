@@ -47,18 +47,17 @@ jobs:
               sys.exit(0)
 
           ids = []
-          # If file looks like csv (has comma) try csv parsing with header
+          # If CSV, parse as CSV with header(s)
           if file_path.lower().endswith(".csv"):
               with open(file_path, newline='', encoding='utf-8') as fh:
                   reader = csv.DictReader(fh)
-                  # support different header names
                   for r in reader:
                       for h in ("athlete_id","Athlete ID","id","athlete"):
-                          if h in r and r[h] is not None and str(r[h]).strip()!="":
+                          if h in r and r[h] is not None and str(r[h]).strip() != "":
                               ids.append(str(r[h]).strip())
                               break
           else:
-              # treat as plain text: one id per line
+              # plain text: one id per line
               with open(file_path, encoding='utf-8') as fh:
                   for line in fh:
                       v = line.strip()
@@ -78,7 +77,8 @@ jobs:
           FILE: ${{ github.event.inputs.file }}
           START_IDX: ${{ github.event.inputs.start_index }}
           END_IDX: ${{ github.event.inputs.end_index }}
-      - name: show matrix
+
+      - name: Show matrix JSON (debug)
         run: |
           cat athletes.json || true
 
@@ -91,8 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.build-matrix-from-file.outputs.matrix).include }}
-      max-parallel: 2
+      matrix: ${{ fromJson(needs.build-matrix-from-file.outputs.matrix) }}  # <-- pass the whole object
+      max-parallel: 2   # ADJUST: set to 1 or 2 if Strava rate limits are a concern
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,10 +102,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
 
+      - name: Show matrix entry (debug)
+        run: |
+          echo "Matrix entry: ${{ toJson(matrix) || matrix }}" || true
+
       - name: Run download for athlete
         env:
           TARGET_ATHLETE_ID: ${{ matrix.athlete_id }}
-          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}   # optional if script still needs sheet access
+          # keep these if your script still needs to access the sheet or Strava
+          GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
           SHEET_URL: ${{ secrets.SHEET_URL }}
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
