@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Download last 30 activities for ALL athletes listed in a Google Sheet,
-with 15-20s delay between athletes, auto-save rotated refresh_tokens and
+with 2s delay between athletes, auto-save rotated refresh_tokens and
 fill missing Athlete ID / name by calling Strava /athlete endpoint.
 
 Env required:
@@ -12,9 +12,8 @@ Env required:
 
 Optional:
   - OUTPUT_DIR (default ./strava_output)
-  - CHECKPOINT_FILE (default ./strava_output/strava_checkpoint.json)
-  - DELAY_MIN / DELAY_MAX (defaults 15 / 20)
 """
+
 import os
 import sys
 import json
@@ -42,7 +41,6 @@ if not (GOOGLE_SHEETS_JSON and SHEET_URL and STRAVA_CLIENT_ID and STRAVA_CLIENT_
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "strava_output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-CHECKPOINT_FILE = os.environ.get("CHECKPOINT_FILE", os.path.join(OUTPUT_DIR, "strava_checkpoint.json"))
 OUT_CSV = os.path.join(OUTPUT_DIR, "all_athletes_activities.csv")
 OUT_JSON = os.path.join(OUTPUT_DIR, "all_athletes_activities.json")
 OUT_DB = os.path.join(OUTPUT_DIR, "all_athletes_activities.db")
@@ -53,12 +51,9 @@ API_ATHLETE = "https://www.strava.com/api/v3/athlete"
 PER_PAGE = 30
 PAGE = 1
 
-# Persist every N athletes
-PERSIST_EVERY = int(os.environ.get("PERSIST_EVERY", "10"))
-
-# Delay bounds (seconds)
-DELAY_MIN = float(os.environ.get("DELAY_MIN", "15"))
-DELAY_MAX = float(os.environ.get("DELAY_MAX", "20"))
+# Delay fixed at 2 seconds
+DELAY_MIN = 2.0
+DELAY_MAX = 2.0
 
 # ---------------------
 # Google Sheets helpers
@@ -78,13 +73,11 @@ def init_sheet_client():
     return sheet
 
 def read_sheet_rows_and_headers(sheet):
-    # returns list of rows (dicts) plus header list
     headers = sheet.row_values(1)
     rows = sheet.get_all_records()
     return rows, headers
 
 def find_col_index(headers, name_variants):
-    # return 1-based column index for first matching variant; None if not found
     for i, h in enumerate(headers, start=1):
         for v in name_variants:
             if h is None:
@@ -94,7 +87,6 @@ def find_col_index(headers, name_variants):
     return None
 
 def update_sheet_cell(sheet, sheet_row_num, col_idx, value):
-    # sheet_row_num is 1-based (including header row)
     if col_idx is None:
         return
     try:
@@ -107,9 +99,6 @@ def update_sheet_cell(sheet, sheet_row_num, col_idx, value):
 # Strava helpers
 # ---------------------
 def exchange_refresh_for_access(refresh_token: str) -> Optional[dict]:
-    """
-    Returns token JSON on success (contains access_token, refresh_token, expires_at).
-    """
     url = "https://www.strava.com/oauth/token"
     payload = {
         "client_id": STRAVA_CLIENT_ID,
@@ -263,25 +252,6 @@ def write_sql_dump():
     print(f"Wrote SQL dump: {OUT_SQL}")
 
 # ---------------------
-# Checkpointing
-# ---------------------
-def load_checkpoint():
-    if os.path.exists(CHECKPOINT_FILE):
-        try:
-            with open(CHECKPOINT_FILE, "r", encoding="utf-8") as fh:
-                return json.load(fh)
-        except Exception:
-            pass
-    return {"last_index": -1, "processed_athletes": 0}
-
-def save_checkpoint(cp: dict):
-    tmp = CHECKPOINT_FILE + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(cp, fh, indent=2, default=str)
-    os.replace(tmp, CHECKPOINT_FILE)
-    print(f"✅ Checkpoint saved: {CHECKPOINT_FILE}")
-
-# ---------------------
 # Utilities
 # ---------------------
 def _get_field(row: dict, *variants, default=None):
@@ -327,16 +297,10 @@ def main():
     col_idx_username = find_col_index(headers, ["Username", "username", "user"])
 
     ensure_db()
-    cp = load_checkpoint()
-    last_index = cp.get("last_index", -1)
-    processed_athletes = cp.get("processed_athletes", 0)
     all_fetched = 0
 
     for idx, r in enumerate(rows):
-        # sheet.get_all_records returns rows corresponding to spreadsheet rows 2..N (header at 1)
         sheet_row_num = idx + 2
-        if idx <= last_index:
-            continue
 
         athlete_id = str(_get_field(r, "Athlete ID", "AthleteID", "Athlete Id", default="") or "").strip()
         username = str(_get_field(r, "Username", "username", default="") or "").strip()
@@ -349,31 +313,22 @@ def main():
 
         print(f"\n[{idx+1}/{total}] Processing athlete row {sheet_row_num}: {athlete_name} (id={athlete_id})")
 
-        # Prefer refresh exchange if present
         token_json = None
         if refresh_token:
             token_json = exchange_refresh_for_access(refresh_token)
             if token_json and token_json.get("access_token"):
                 access_token = token_json.get("access_token")
-                # if Strava returned a rotated refresh token, persist it back to sheet
                 if token_json.get("refresh_token") and token_json.get("refresh_token") != refresh_token:
                     try:
                         update_sheet_cell(sheet, sheet_row_num, col_idx_refresh, token_json.get("refresh_token"))
-                        # also update local variable so we don't re-exchange unnecessarily
                         refresh_token = token_json.get("refresh_token")
                     except Exception as e:
                         print(f"  ⚠ Failed to persist rotated refresh token: {e}")
 
         if not access_token:
             print(" ⚠ No access token available for this athlete. Skipping.")
-            last_index = idx
-            processed_athletes += 1
-            cp["last_index"] = last_index
-            cp["processed_athletes"] = processed_athletes
-            save_checkpoint(cp)
             continue
 
-        # If athlete id missing, fetch profile and write back to sheet
         if not athlete_id:
             profile = fetch_athlete_profile(access_token)
             if profile:
@@ -394,18 +349,10 @@ def main():
                     update_sheet_cell(sheet, sheet_row_num, col_idx_username, new_uname)
                     username = new_uname
                 athlete_name = f"{firstname} {lastname}".strip() or username or athlete_id
-            else:
-                print(" ⚠ Could not fetch profile to fill Athlete ID. Proceeding without it.")
 
-        # Fetch activities
         acts = fetch_activities(access_token)
         if not isinstance(acts, list):
             print(" ⚠ Unexpected activities response; skipping athlete.")
-            last_index = idx
-            processed_athletes += 1
-            cp["last_index"] = last_index
-            cp["processed_athletes"] = processed_athletes
-            save_checkpoint(cp)
             continue
 
         flat = [flatten_activity(a, athlete_id or username or f"row-{idx}", athlete_name) for a in acts]
@@ -414,24 +361,15 @@ def main():
         all_fetched += fetched_count
         print(f" ✅ Fetched {fetched_count} activities for {athlete_name} (total fetched so far: {all_fetched})")
 
-        # If token_json returned expiry / new refresh_token, also optionally write access token to sheet (if header exists)
-        # Persist access token if header present
         if token_json and token_json.get("access_token") and col_idx_access:
             try:
                 update_sheet_cell(sheet, sheet_row_num, col_idx_access, token_json.get("access_token"))
             except Exception:
                 pass
 
-        # checkpoint + periodic persistence
-        last_index = idx
-        processed_athletes += 1
-        cp["last_index"] = last_index
-        cp["processed_athletes"] = processed_athletes
-        save_checkpoint(cp)
-
-        if processed_athletes % PERSIST_EVERY == 0:
-            persist_csv_json()
-            write_sql_dump()
+        # persist after every athlete
+        persist_csv_json()
+        write_sql_dump()
 
         # delay before next athlete
         if idx < total - 1:
@@ -439,10 +377,7 @@ def main():
             print(f"⏳ Sleeping {delay:.1f}s before next athlete...")
             time.sleep(delay)
 
-    # final persist
-    persist_csv_json()
-    write_sql_dump()
-    print(f"\nDone. Processed {processed_athletes} athletes, fetched {all_fetched} activities total.")
+    print(f"\nDone. Processed {len(rows)} athletes, fetched {all_fetched} activities total.")
 
 if __name__ == "__main__":
     main()
