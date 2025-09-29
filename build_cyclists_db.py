@@ -31,7 +31,7 @@ from typing import Optional, Dict, List
 # -----------------------
 OUTPUT_DB = os.environ.get("OUTPUT_DB", "cyclists.db")
 CHECKPOINT_FILE = os.environ.get("CHECKPOINT_FILE", "strava_profiles_checkpoint.json")
-BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "50"))
+BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "300"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))
 INITIAL_RETRY_SLEEP = float(os.environ.get("INITIAL_RETRY_SLEEP", "5"))
 RATE_LIMIT_BUFFER_SEC = float(os.environ.get("RATE_LIMIT_BUFFER_SEC", "2"))
@@ -40,9 +40,9 @@ STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
 
 # Rate limit targets:
-REQ_LIMIT_15MIN = 100
+REQ_LIMIT_15MIN = 300
 REQ_WINDOW_15MIN = 15 * 60  # seconds
-REQ_LIMIT_1H = 300
+REQ_LIMIT_1H = 1200
 REQ_WINDOW_1H = 60 * 60  # seconds
 
 # -----------------------
