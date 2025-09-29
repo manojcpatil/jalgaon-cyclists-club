@@ -31,6 +31,13 @@ jobs:
           import gspread
           from oauth2client.service_account import ServiceAccountCredentials
 
+          def get_cell_str(row, *keys):
+              """Return first matching key from row as a stripped string (safe for ints/None)."""
+              for k in keys:
+                  if k in row and row[k] is not None:
+                      return str(row[k]).strip()
+              return ""
+
           # load creds and open sheet
           creds = json.loads(os.environ["GOOGLE_SHEETS_JSON"])
           scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -41,14 +48,16 @@ jobs:
 
           include = []
           for r in rows:
-              # try several possible column names for Athlete ID
-              aid = (r.get("Athlete ID") or r.get("AthleteID") or r.get("Athlete Id")
-                     or r.get("athlete id") or r.get("Athlete_Id") or "").strip()
+              # try several possible column names for Athlete ID (safe conversion)
+              aid = get_cell_str(r, "Athlete ID", "AthleteID", "Athlete Id", "athlete id", "Athlete_Id")
+              # OPTIONAL: require a refresh token to avoid runs for rows without credentials
+              # refresh = get_cell_str(r, "Refresh Token", "RefreshToken", "refresh token")
+              # if aid and refresh:
               if aid:
                   include.append({"athlete_id": aid})
 
-          # output must be {"include": [ { "athlete_id": "..." }, ... ]}
-          print(json.dumps({"include": include}))
+          out = {"include": include}
+          print(json.dumps(out))
           PY
           cat athletes.json
 
@@ -57,14 +66,13 @@ jobs:
         run: |
           echo "matrix=$(cat athletes.json)" >> $GITHUB_OUTPUT
 
-
   run-athlete:
     needs: build-matrix
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.build-matrix.outputs.matrix).include }}
-      max-parallel: 2   # ADJUST: controls concurrency to avoid Strava rate limits
+      max-parallel: 2   # ADJUST: set to 1 or 2 if Strava rate limits are a concern
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,7 +80,7 @@ jobs:
       - name: Install runtime deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true   # adjust to your deps
+          pip install -r requirements.txt || true   # adjust to your deps (pandas, requests, etc.)
 
       - name: Run download for athlete
         env:
@@ -93,5 +101,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add strava_output || true
-          git commit -m "Strava outputs: ${{ matrix.athlete_id }}" || echo "no changes to commit"
+          git commit -m "Strava outputs: $TARGET_ATHLETE_ID" || echo "no changes to commit"
           git push || echo "push failed (maybe permissions)"
