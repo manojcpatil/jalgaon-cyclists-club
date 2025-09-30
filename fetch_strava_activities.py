@@ -60,8 +60,8 @@ PER_PAGE = 30
 PAGE = 1
 
 # Delay fixed at 2 seconds
-DELAY_MIN = 2.0
-DELAY_MAX = 2.0
+DELAY_MIN = 1.0
+DELAY_MAX = 1.5
 
 # ---------------------
 # Google Sheets helpers
