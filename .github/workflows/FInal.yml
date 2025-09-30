@@ -76,7 +76,3 @@ jobs:
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           git commit -m "chore: update athlete activity data ($TIMESTAMP)"
           git push origin HEAD
-
-      - name: Success
-        if: success()
-        run: echo "Completed: fetch-and-commit job succeeded."
