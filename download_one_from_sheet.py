@@ -199,9 +199,7 @@ def persist_csv_json_sql():
                 df[c] = pd.to_datetime(df[c], errors="coerce")
         df.to_csv(OUT_CSV, index=False)
         df.to_json(OUT_JSON, orient="records", date_format="iso")
-      # Separate JSON per athlete_id
-        for athlete_id, g in df.groupby("athlete_id"):
-          g.to_json(f"athlete_{athlete_id}.json", orient="records", date_format="iso")
+
 
         print(f"Persisted CSV/JSON with {len(df)} unique activities.")
 
