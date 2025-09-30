@@ -1,10 +1,10 @@
 # .github/workflows/FInal.yml
-name: Fetch Strava Activities & Commit
+name: Fetch Strava Activities  Commit
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 2 * * *'  # daily at 02:00 UTC
+    - cron: '0 2 * * *'  # daily at 02:00 UTC; change as needed
 
 permissions:
   contents: write
@@ -39,9 +39,17 @@ jobs:
         run: |
           set -euo pipefail
           echo "Running Strava fetch script..."
+          # adjust path to your script if it's not at repo root
           python3 ./fetch_strava_activities.py
           echo "Script finished. Listing generated files:"
           ls -la "${OUTPUT_DIR}" || true
+
+      - name: Upload generated files as artifact (for download)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strava-output
+          path: strava_output
 
       - name: Commit and push generated files (if any)
         env:
@@ -50,21 +58,25 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           OUTPUT_DIR="strava_output"
           if [ ! -d "$OUTPUT_DIR" ]; then
             echo "No ${OUTPUT_DIR}/ directory produced; nothing to commit."
             exit 0
           fi
+
           git add --all "$OUTPUT_DIR"
-          # detect staged changes
+
+          # if nothing staged, exit gracefully
           if git diff --cached --quiet; then
             echo "No changes in ${OUTPUT_DIR} to commit."
             exit 0
           fi
+
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           git commit -m "chore: update athlete activity data ($TIMESTAMP)"
           git push origin HEAD
 
       - name: Success
         if: success()
-        run: echo "Completed: fetch and commit job succeeded."
+        run: echo "Completed: fetch-and-commit job succeeded."
