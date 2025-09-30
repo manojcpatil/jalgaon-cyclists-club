@@ -1,4 +1,4 @@
-# .github/workflows/fetch-athlete-activities.yml
+# .github/workflows/FInal.yml
 name: Fetch Strava Activities & Commit
 
 on:
