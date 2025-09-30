@@ -1,24 +1,22 @@
 # .github/workflows/fetch-athlete-activities.yml
 name: Fetch Strava Activities & Commit
 
-# allow manual runs and daily schedule (change cron as needed)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 2 * * *'  # daily at 02:00 UTC — change as you like
+    - cron: '0 2 * * *'  # daily at 02:00 UTC
 
-# ensure workflow can push changes
 permissions:
   contents: write
 
 jobs:
   fetch-and-commit:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # allow pushing back using the GITHUB_TOKEN
           persist-credentials: true
 
       - name: Set up Python
@@ -32,11 +30,6 @@ jobs:
           pip install --no-cache-dir requests pandas gspread oauth2client
 
       - name: Prepare environment and run fetch script
-        # NOTE: Make sure you register these secrets in repo settings:
-        # - GOOGLE_SHEETS_JSON (the entire service-account JSON as a single secret)
-        # - SHEET_URL
-        # - STRAVA_CLIENT_ID
-        # - STRAVA_CLIENT_SECRET
         env:
           GOOGLE_SHEETS_JSON: ${{ secrets.GOOGLE_SHEETS_JSON }}
           SHEET_URL: ${{ secrets.SHEET_URL }}
@@ -46,38 +39,30 @@ jobs:
         run: |
           set -euo pipefail
           echo "Running Strava fetch script..."
-          # If your script is not at repo root, adjust path accordingly.
           python3 ./fetch_strava_activities.py
           echo "Script finished. Listing generated files:"
           ls -la "${OUTPUT_DIR}" || true
 
       - name: Commit and push generated files (if any)
         env:
-          # GITHUB_TOKEN is automatically provided to workflows and allowed to push
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # ensure output dir exists
           OUTPUT_DIR="strava_output"
           if [ ! -d "$OUTPUT_DIR" ]; then
             echo "No ${OUTPUT_DIR}/ directory produced; nothing to commit."
             exit 0
           fi
-
           git add --all "$OUTPUT_DIR"
-          # detect changes
+          # detect staged changes
           if git diff --cached --quiet; then
             echo "No changes in ${OUTPUT_DIR} to commit."
             exit 0
           fi
-
-          # Create a concise commit message and push
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           git commit -m "chore: update athlete activity data ($TIMESTAMP)"
-          # push using the checkout action's credentials (persist-credentials: true)
           git push origin HEAD
 
       - name: Success
