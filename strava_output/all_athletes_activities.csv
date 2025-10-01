@@ -1,0 +1,2 @@
+athlete_id,athlete_name,activity_id,name,type,start_date_local,start_date_utc,distance_m,distance_km,moving_time_s,elapsed_time_s,total_elevation_gain_m,average_speed_mps,calories,fetched_at_utc
+25673797,rajesh patil,1230634388,Morning Ride,Ride,2017-10-15 07:05:07+00:00,2017-10-15 01:35:07+00:00,12704.1,12.7041,3444,6960,156.5,3.689,,2025-10-01 13:52:15.998404
