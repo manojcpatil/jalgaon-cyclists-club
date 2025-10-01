@@ -43,6 +43,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # use the *shared* outputs instead of per-athlete
 OUT_DB = os.path.join(OUT_DIR, "all_athletes_activities.db")
 OUT_CSV = os.path.join(OUT_DIR, "all_athletes_activities.csv")
+OUT_CSV2 = os.path.join(OUT_DIR, "single_athlete_activities.csv")
 OUT_JSON = os.path.join(OUT_DIR, "all_athletes_activities.json")
 OUT_SQL = os.path.join(OUT_DIR, "all_athletes_activities.sql")
 
@@ -198,6 +199,7 @@ def persist_csv_json_sql():
             if c in df.columns:
                 df[c] = pd.to_datetime(df[c], errors="coerce")
         df.to_csv(OUT_CSV, index=False)
+        df.to_csv(OUT_CSV2, index=False)
         df.to_json(OUT_JSON, orient="records", date_format="iso")
 
 
