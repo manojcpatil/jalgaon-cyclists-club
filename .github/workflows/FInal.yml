@@ -1,5 +1,5 @@
 # .github/workflows/FInal.yml
-name: Fetch Strava Activities  Commit
+name: Final Running Code
 
 on:
   workflow_dispatch:
