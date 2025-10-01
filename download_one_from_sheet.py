@@ -3,6 +3,11 @@
 Download last 30 activities for a single athlete looked up from a Google Sheet,
 and merge them into the shared all_athletes dataset.
 
+New: Writes a per-athlete CSV named like:
+  athlete_{athlete_id}_{YYYYMMDD}.csv
+and also a human-friendly:
+  athlete_{safe_athlete_name}_{YYYYMMDD}.csv
+
 Environment variables required:
   - GOOGLE_SHEETS_JSON  (service-account JSON text)
   - SHEET_URL           (your sheet URL)
@@ -13,12 +18,12 @@ Environment variables required:
 Optional:
   - OUTPUT_DIR (default: ./strava_output)
 """
-
 import os
 import sys
 import json
 import sqlite3
-from typing import Optional
+import re
+from typing import Optional, List, Dict
 from datetime import datetime
 
 import requests
@@ -134,6 +139,15 @@ def flatten_activity(act: dict, athlete_id: str, athlete_name: str) -> dict:
         "fetched_at_utc": datetime.utcnow().isoformat(),
     }
 
+def safe_filename(s: str) -> str:
+    """Make a filename-safe string (keep alnum, hyphen, underscore)."""
+    if not s:
+        return ""
+    s = s.strip()
+    s = s.replace(" ", "_")
+    # remove anything that's not alnum, underscore, hyphen, or dot
+    return re.sub(r"[^A-Za-z0-9_.-]+", "", s)
+
 # ---------------------------
 # Storage helpers (shared DB)
 # ---------------------------
@@ -164,7 +178,7 @@ def ensure_db():
     conn.commit()
     conn.close()
 
-def append_to_db(rows):
+def append_to_db(rows: List[Dict]):
     if not rows:
         return
     conn = sqlite3.connect(OUT_DB)
@@ -202,7 +216,6 @@ def persist_csv_json_sql():
         df.to_csv(OUT_CSV2, index=False)
         df.to_json(OUT_JSON, orient="records", date_format="iso")
 
-
         print(f"Persisted CSV/JSON with {len(df)} unique activities.")
 
         with open(OUT_SQL, "w", encoding="utf-8") as fh:
@@ -215,7 +228,7 @@ def persist_csv_json_sql():
             for _, row in df.iterrows():
                 vals = [row.get(c) for c in df.columns]
                 def fmt(v):
-                    if v is None:
+                    if pd.isna(v):
                         return "NULL"
                     if isinstance(v, (int, float)):
                         return str(v)
@@ -224,6 +237,38 @@ def persist_csv_json_sql():
         print(f"Wrote SQL dump: {OUT_SQL}")
     finally:
         conn.close()
+
+# ---------------------------
+# New: persist per-athlete CSV
+# ---------------------------
+def persist_single_athlete_csv(rows: List[Dict], athlete_id: str, athlete_name: str):
+    """
+    Write CSVs:
+      - athlete_{athlete_id}_{YYYYMMDD}.csv
+      - athlete_{safe_athlete_name}_{YYYYMMDD}.csv  (if athlete_name is available)
+    """
+    if not rows:
+        print("No activities to persist for athlete:", athlete_id)
+        return
+
+    df = pd.DataFrame(rows)
+    # convert date-like columns if present
+    for c in ("start_date_local", "start_date_utc", "fetched_at_utc"):
+        if c in df.columns:
+            df[c] = pd.to_datetime(df[c], errors="coerce")
+
+    date_tag = datetime.utcnow().strftime("%Y%m%d")
+    filename_id = os.path.join(OUT_DIR, f"athlete_{athlete_id}_{date_tag}.csv")
+    df.to_csv(filename_id, index=False)
+    print(f"Wrote per-athlete CSV: {filename_id}")
+
+    if athlete_name:
+        safe_name = safe_filename(athlete_name)[:120] or safe_filename(athlete_id)
+        filename_name = os.path.join(OUT_DIR, f"athlete_{safe_name}_{date_tag}.csv")
+        # avoid overwriting the id-name file if names collide: only write if different path
+        if os.path.abspath(filename_name) != os.path.abspath(filename_id):
+            df.to_csv(filename_name, index=False)
+            print(f"Wrote per-athlete CSV: {filename_name}")
 
 # ---------------------------
 # Main
@@ -269,6 +314,11 @@ def main():
 
     ensure_db()
     append_to_db(flat)
+
+    # Persist per-athlete CSV (new behavior)
+    persist_single_athlete_csv(flat, athlete_id, athlete_name)
+
+    # Persist shared CSV/JSON/SQL
     persist_csv_json_sql()
 
 if __name__ == "__main__":
