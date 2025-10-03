@@ -1,10 +1,35 @@
+name: Run Strava Upload
+
+on:
+  workflow_dispatch:    # manual trigger from Actions UI
+  schedule:
+    - cron: "0 3 * * *"   # optional: daily at 03:00 UTC
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
       - name: Download latest CSV
-        run: curl -L -o activities.csv https://raw.githubusercontent.com/manojcpatil/jalgaon-cyclists-club/refs/heads/main/strava_output/athlete_32305502_20251003.csv
+        run: |
+          curl -L -o activities.csv "https://raw.githubusercontent.com/manojcpatil/jalgaon-cyclists-club/refs/heads/main/strava_output/athlete_32305502_20251003.csv"
 
       - name: Run uploader
         env:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_ACCESS_TOKEN: ${{ secrets.STRAVA_ACCESS_TOKEN }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
         run: |
           python strava_upload_from_csv.py --csv activities.csv
