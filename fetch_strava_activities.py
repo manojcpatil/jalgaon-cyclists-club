@@ -56,7 +56,7 @@ OUT_SQL = os.path.join(OUTPUT_DIR, "all_athletes_activities.sql")
 
 API_ACTIVITIES = "https://www.strava.com/api/v3/athlete/activities"
 API_ATHLETE = "https://www.strava.com/api/v3/athlete"
-PER_PAGE = 30
+PER_PAGE = 5
 PAGE = 1
 
 # Delay fixed at 2 seconds
